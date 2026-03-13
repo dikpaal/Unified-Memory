@@ -187,3 +187,73 @@ All Phase 1 & 2 components complete:
 - Backend uses gpt-4o-mini instead of gpt-4.1-nano (model availability)
 - Icons are minimal placeholders (can improve in Phase 4)
 - Selectors may need adjustment based on actual platform UI testing
+
+---
+
+## 2026-03-12 - Debugging & Testing Session
+
+### Issues Found & Fixed
+
+**Issue 1: Port Conflict (macOS AirPlay)**
+- Problem: macOS uses port 5000 for AirPlay/Control Center
+- Flask failed to start, extension got "Failed to fetch" errors
+- Solution: Changed to port 5001
+- Files updated: backend/app.py, extension/background.js, BACKEND_CONTRACT.md, backend/README.md
+
+**Issue 2: Platform Name Mismatch**
+- Problem: Extension sent "chatgpt.com", backend expected "chatgpt"
+- Solution: Normalized platform names (claude, chatgpt, gemini)
+- Extension now stores normalized names in dataset attribute
+- Files updated: extension/popup.js
+
+**Issue 3: mem0 Search Empty String**
+- Problem: `m.search("")` failed - OpenAI embeddings API rejects empty strings
+- Error: "Invalid 'input[0]': input cannot be an empty string"
+- Solution: Use `m.get_all(user_id)` with fallback to `m.search("memory", limit=100)`
+- Files updated: backend/app.py
+
+### Testing Results
+
+**Working:**
+- Backend starts successfully on port 5001
+- Extension connects to backend
+- Load Memories button works (returns "No new memories" when empty)
+- Logging shows detailed request/response flow
+
+**Next Testing Needed:**
+- Sync Memory button with actual conversations
+- Cross-platform memory loading
+- All 3 platforms (claude.ai, chatgpt.com, gemini.google.com)
+
+### Code Improvements
+
+**Backend Logging:**
+- Added comprehensive logging throughout
+- Health check endpoint: GET /health
+- Startup banner shows mem0 status, backend URL
+- Request/response logging for debugging
+
+**Error Handling:**
+- Graceful platform failure (continues if one fails)
+- Better error messages in responses
+- API key validation on startup
+
+### Current State
+
+**Fully Working:**
+- Backend API (localhost:5001)
+- Extension → Backend communication
+- Platform detection
+- Error handling and logging
+
+**Ready for Production Testing:**
+- Phase 1 & 2 complete
+- All components integrated
+- Debugging tools in place
+
+**Commits This Session:**
+```
+237d21d Fix platform names and mem0 search
+0011e38 Fix port conflict: change 5000 to 5001 (macOS AirPlay)
+65ecc27 Add logging and health endpoint
+```
