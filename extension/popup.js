@@ -1,11 +1,15 @@
 // Popup UI controller
 const syncBtn = document.getElementById('sync-btn');
 const loadBtn = document.getElementById('load-btn');
+const viewBtn = document.getElementById('view-btn');
 const statusEl = document.getElementById('status');
 const statusText = document.getElementById('status-text');
 const platformEl = document.getElementById('platform');
 const lastSyncEl = document.getElementById('last-sync');
 const memoryCountEl = document.getElementById('memory-count');
+const memoriesPanel = document.getElementById('memories-panel');
+const memoriesList = document.getElementById('memories-list');
+const closeMemoriesBtn = document.getElementById('close-memories');
 
 // Platform detection
 const platformMap = {
@@ -147,6 +151,57 @@ loadBtn.addEventListener('click', async () => {
     loadBtn.disabled = false;
   }
 });
+
+// View memories handler
+viewBtn.addEventListener('click', async () => {
+  try {
+    const platform = platformEl.dataset.platform;
+
+    // Fetch memories from backend
+    const response = await chrome.runtime.sendMessage({
+      action: 'getMemories',
+      platform
+    });
+
+    if (response && response.success) {
+      displayMemories(response.memories);
+    } else {
+      memoriesList.innerHTML = '<div class="empty-state">Failed to load memories</div>';
+      memoriesPanel.classList.remove('hidden');
+    }
+  } catch (error) {
+    console.error('View memories error:', error);
+    memoriesList.innerHTML = '<div class="empty-state">Error loading memories</div>';
+    memoriesPanel.classList.remove('hidden');
+  }
+});
+
+// Close memories panel
+closeMemoriesBtn.addEventListener('click', () => {
+  memoriesPanel.classList.add('hidden');
+});
+
+// Display memories in panel
+function displayMemories(memories) {
+  if (!memories || memories.length === 0) {
+    memoriesList.innerHTML = '<div class="empty-state">No memories stored yet</div>';
+  } else {
+    memoriesList.innerHTML = memories.map(m => `
+      <div class="memory-item">
+        <div class="memory-text">${escapeHtml(m.text)}</div>
+        ${m.created ? `<div class="memory-time">${m.created}</div>` : ''}
+      </div>
+    `).join('');
+  }
+  memoriesPanel.classList.remove('hidden');
+}
+
+// Escape HTML to prevent XSS
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
 
 // Initialize on load
 init();

@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from mem0 import Memory
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import os
 from dotenv import load_dotenv
 import logging
@@ -81,6 +81,44 @@ def sync():
         logger.error(f"Full traceback:\n{traceback.format_exc()}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@app.route('/memories', methods=['GET'])
+def get_memories():
+    """Get all memories for current platform"""
+    logger.info("Received memories request")
+    try:
+        if m is None:
+            return jsonify({'success': False, 'error': 'Backend not initialized'}), 500
+
+        platform = request.args.get('platform')
+        if not platform:
+            return jsonify({'success': False, 'error': 'Missing platform'}), 400
+
+        user_id = f"{platform}_user"
+        logger.info(f"Fetching memories for {user_id}")
+
+        # Get all memories for this user
+        results = m.get_all(user_id=user_id)
+
+        # Handle response format
+        memory_list = []
+        memory_list = results['results']
+
+        logger.info(f"Found {len(memory_list)} memories")
+
+        # Format for display
+        memories = [{
+            'text': mem.get('memory', ''),
+            'created': mem.get('created_at', '')[:16] if mem.get('created_at') else ''
+        } for mem in memory_list]
+
+        return jsonify({
+            'success': True,
+            'memories': memories
+        })
+    except Exception as e:
+        logger.error(f"Memories error: {e}")
+        return jsonify({'success': True, 'memories': []}), 200
+
 @app.route('/load', methods=['GET'])
 def load():
     logger.info("Received load request")
@@ -96,7 +134,7 @@ def load():
             return jsonify({'success': False, 'error': 'Missing platform parameter'}), 400
 
         # Get memories from other platforms
-        seven_days_ago = datetime.now() - timedelta(days=7)
+        seven_days_ago = datetime.now(timezone.utc) - timedelta(days=7)
 
         platforms = ['chatgpt', 'claude', 'gemini']
         if current_platform in platforms:
@@ -106,49 +144,26 @@ def load():
 
         for platform in platforms:
             user_id = f"{platform}_user"
-            try:
-                # Get all memories for this user (try get_all first, fallback to search)
-                try:
-                    results = m.get_all(user_id=user_id)
-                except (AttributeError, TypeError):
-                    # Fallback: use search with a generic query
-                    logger.info(f"get_all not available, using search for {platform}")
-                    results = m.search("memory", user_id=user_id, limit=100)
 
-                logger.info(f"Got memories for {platform}: {type(results)}, {results is not None}")
+            results = m.get_all(user_id=user_id)
+            logger.info(f"Got memories for {platform}: {type(results)}, {results is not None}")
 
-                # Handle both dict with 'results' key or list directly
-                memory_list = []
-                if isinstance(results, dict) and 'results' in results:
-                    memory_list = results['results']
-                elif isinstance(results, list):
-                    memory_list = results
+            # Handle both dict with 'results' key or list directly
+            memory_list = []
+            memory_list = results['results']
+            
+            logger.info(f"Processing {len(memory_list)} memories for {platform}")
 
-                logger.info(f"Processing {len(memory_list)} memories for {platform}")
-
-                for r in memory_list:
-                    # Parse timestamp
-                    created_str = r.get('created_at', '')
-                    try:
-                        created = datetime.fromisoformat(created_str.replace('Z', '+00:00'))
-                        if created > seven_days_ago:
-                            all_memories.append({
-                                'platform': platform,
-                                'memory': r.get('memory', ''),
-                                'timestamp': created_str
-                            })
-                    except Exception as parse_error:
-                        # If timestamp parsing fails, include anyway
-                        logger.warning(f"Timestamp parse error: {parse_error}")
-                        all_memories.append({
-                            'platform': platform,
-                            'memory': r.get('memory', ''),
-                            'timestamp': created_str
-                        })
-            except Exception as e:
-                # Continue if one platform fails
-                logger.error(f"Error loading from {platform}: {e}")
-                continue
+            for r in memory_list:
+                # Parse timestamp
+                created_str = r.get('created_at', '')
+                created = datetime.fromisoformat(created_str.replace('Z', '+00:00'))
+                if created > seven_days_ago:
+                    all_memories.append({
+                        'platform': platform,
+                        'memory': r.get('memory', ''),
+                        'timestamp': created_str
+                    })
 
         # Format memories
         formatted = format_memories(all_memories)

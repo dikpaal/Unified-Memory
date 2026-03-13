@@ -8,9 +8,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     handleSyncToBackend(request.data, sendResponse);
     return true; // Keep channel open for async response
   }
-  
+
   if (request.action === 'loadMemories') {
     handleLoadMemories(request.platform, sendResponse);
+    return true; // Keep channel open for async response
+  }
+
+  if (request.action === 'getMemories') {
+    handleGetMemories(request.platform, sendResponse);
     return true; // Keep channel open for async response
   }
 });
@@ -62,23 +67,52 @@ async function handleLoadMemories(platform, sendResponse) {
         'Content-Type': 'application/json',
       }
     });
-    
+
     if (!response.ok) {
       throw new Error(`Backend returned ${response.status}`);
     }
-    
+
     const result = await response.json();
-    
-    sendResponse({ 
+
+    sendResponse({
       success: true,
       formatted: result.formatted_text,
       count: result.memory_count
     });
   } catch (error) {
     console.error('Load error:', error);
-    sendResponse({ 
-      success: false, 
-      error: `Backend error: ${error.message}` 
+    sendResponse({
+      success: false,
+      error: `Backend error: ${error.message}`
+    });
+  }
+}
+
+// Handle get memories request - fetch current platform's memories
+async function handleGetMemories(platform, sendResponse) {
+  try {
+    const response = await fetch(`${BACKEND_URL}/memories?platform=${platform}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Backend returned ${response.status}`);
+    }
+
+    const result = await response.json();
+
+    sendResponse({
+      success: true,
+      memories: result.memories
+    });
+  } catch (error) {
+    console.error('Get memories error:', error);
+    sendResponse({
+      success: false,
+      error: `Backend error: ${error.message}`
     });
   }
 }
