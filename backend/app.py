@@ -4,13 +4,19 @@ from mem0 import Memory
 from datetime import datetime, timedelta
 import os
 from dotenv import load_dotenv
+import logging
 
 load_dotenv()
+
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 CORS(app)
 
 # Initialize mem0
+logger.info("Initializing mem0...")
 config = {
     "llm": {
         "provider": "openai",
@@ -28,12 +34,27 @@ config = {
     }
 }
 
-m = Memory.from_config(config)
+try:
+    m = Memory.from_config(config)
+    logger.info("mem0 initialized successfully")
+except Exception as e:
+    logger.error(f"Failed to initialize mem0: {e}")
+    m = None
+
+@app.route('/health', methods=['GET'])
+def health():
+    return jsonify({'status': 'ok', 'mem0_ready': m is not None})
 
 @app.route('/sync', methods=['POST'])
 def sync():
+    logger.info("Received sync request")
     try:
+        if m is None:
+            logger.error("mem0 not initialized")
+            return jsonify({'success': False, 'error': 'Backend not initialized'}), 500
+
         data = request.json
+        logger.info(f"Sync data: {data.get('user_id')}, {len(data.get('messages', []))} messages")
         messages = data.get('messages', [])
         user_id = data.get('user_id')
         metadata = data.get('metadata', {})
@@ -43,6 +64,7 @@ def sync():
 
         # Add messages to mem0
         result = m.add(messages, user_id=user_id, metadata=metadata)
+        logger.info(f"Sync successful: {len(messages)} messages stored")
 
         return jsonify({
             'success': True,
@@ -50,12 +72,19 @@ def sync():
             'memories_stored': len(result) if isinstance(result, list) else 1
         })
     except Exception as e:
+        logger.error(f"Sync error: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/load', methods=['GET'])
 def load():
+    logger.info("Received load request")
     try:
+        if m is None:
+            logger.error("mem0 not initialized")
+            return jsonify({'success': False, 'error': 'Backend not initialized'}), 500
+
         current_platform = request.args.get('platform')
+        logger.info(f"Load request for platform: {current_platform}")
 
         if not current_platform:
             return jsonify({'success': False, 'error': 'Missing platform parameter'}), 400
@@ -74,6 +103,7 @@ def load():
             try:
                 # Search with empty query to get all memories
                 results = m.search("", user_id=user_id)
+                logger.info(f"Search results for {platform}: {results}")
 
                 if results and 'results' in results:
                     for r in results['results']:
@@ -87,8 +117,9 @@ def load():
                                     'memory': r.get('memory', ''),
                                     'timestamp': created_str
                                 })
-                        except:
+                        except Exception as parse_error:
                             # If timestamp parsing fails, include anyway
+                            logger.warning(f"Timestamp parse error: {parse_error}")
                             all_memories.append({
                                 'platform': platform,
                                 'memory': r.get('memory', ''),
@@ -96,17 +127,19 @@ def load():
                             })
             except Exception as e:
                 # Continue if one platform fails
-                print(f"Error loading from {platform}: {e}")
+                logger.error(f"Error loading from {platform}: {e}")
                 continue
 
         # Format memories
         formatted = format_memories(all_memories)
+        logger.info(f"Load successful: {len(all_memories)} memories found")
 
         return jsonify({
             'formatted_text': formatted,
             'memory_count': len(all_memories)
         })
     except Exception as e:
+        logger.error(f"Load error: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 def format_memories(memories):
@@ -144,6 +177,19 @@ def bad_request(error):
     return jsonify({'success': False, 'error': 'Invalid request'}), 400
 
 if __name__ == '__main__':
-    print("Starting Unified Memory backend on http://localhost:5000")
-    print("Make sure OPENAI_API_KEY is set in .env file")
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        logger.error("OPENAI_API_KEY not set in .env file!")
+        logger.error("Create .env file with: OPENAI_API_KEY=your_key_here")
+        exit(1)
+
+    logger.info("="*50)
+    logger.info("Starting Unified Memory backend")
+    logger.info("Backend URL: http://localhost:5000")
+    logger.info(f"mem0 status: {'Ready' if m else 'Failed'}")
+    logger.info("CORS: Enabled for all origins")
+    logger.info("="*50)
+    logger.info("Test with: curl http://localhost:5000/health")
+    logger.info("="*50)
+
     app.run(host='localhost', port=5000, debug=True)
