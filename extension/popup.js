@@ -1,0 +1,148 @@
+// Popup UI controller
+const syncBtn = document.getElementById('sync-btn');
+const loadBtn = document.getElementById('load-btn');
+const statusEl = document.getElementById('status');
+const statusText = document.getElementById('status-text');
+const platformEl = document.getElementById('platform');
+const lastSyncEl = document.getElementById('last-sync');
+const memoryCountEl = document.getElementById('memory-count');
+
+// Platform detection
+const platformMap = {
+  'claude.ai': 'Claude',
+  'chatgpt.com': 'ChatGPT',
+  'gemini.google.com': 'Gemini'
+};
+
+// Initialize popup
+async function init() {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  const url = new URL(tab.url);
+  const hostname = url.hostname;
+  
+  // Detect platform
+  const platform = Object.keys(platformMap).find(key => hostname.includes(key));
+  if (platform) {
+    platformEl.textContent = platformMap[platform];
+  } else {
+    platformEl.textContent = 'Unknown';
+    syncBtn.disabled = true;
+    loadBtn.disabled = true;
+    setStatus('Navigate to Claude, ChatGPT, or Gemini', 'error');
+    return;
+  }
+  
+  // Load stored data
+  loadStoredData(platform);
+}
+
+// Load stored sync data
+async function loadStoredData(platform) {
+  const result = await chrome.storage.local.get(['lastSync', 'memoryCount']);
+  
+  if (result.lastSync && result.lastSync[platform]) {
+    const syncTime = new Date(result.lastSync[platform]);
+    lastSyncEl.textContent = formatTime(syncTime);
+  }
+  
+  if (result.memoryCount && result.memoryCount[platform]) {
+    memoryCountEl.textContent = result.memoryCount[platform];
+  }
+}
+
+// Format timestamp
+function formatTime(date) {
+  const now = new Date();
+  const diff = now - date;
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+  
+  if (minutes < 1) return 'Just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  return `${days}d ago`;
+}
+
+// Set status message
+function setStatus(message, type = 'default') {
+  statusText.textContent = message;
+  statusEl.className = `status ${type}`;
+}
+
+// Sync memory handler
+syncBtn.addEventListener('click', async () => {
+  syncBtn.disabled = true;
+  loadBtn.disabled = true;
+  setStatus('Syncing...', 'loading');
+  
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    
+    // Send message to content script to scrape
+    const response = await chrome.tabs.sendMessage(tab.id, { action: 'sync' });
+    
+    if (response && response.success) {
+      setStatus(`Synced ${response.count} messages`, 'success');
+      
+      // Update stored data
+      const url = new URL(tab.url);
+      const platform = Object.keys(platformMap).find(key => url.hostname.includes(key));
+      
+      const lastSync = await chrome.storage.local.get('lastSync') || {};
+      lastSync.lastSync = lastSync.lastSync || {};
+      lastSync.lastSync[platform] = new Date().toISOString();
+      await chrome.storage.local.set(lastSync);
+      
+      const memoryCount = await chrome.storage.local.get('memoryCount') || {};
+      memoryCount.memoryCount = memoryCount.memoryCount || {};
+      memoryCount.memoryCount[platform] = response.count;
+      await chrome.storage.local.set(memoryCount);
+      
+      // Reload display
+      loadStoredData(platform);
+    } else {
+      setStatus(response?.error || 'Sync failed', 'error');
+    }
+  } catch (error) {
+    setStatus(`Error: ${error.message}`, 'error');
+  } finally {
+    syncBtn.disabled = false;
+    loadBtn.disabled = false;
+  }
+});
+
+// Load memories handler
+loadBtn.addEventListener('click', async () => {
+  syncBtn.disabled = true;
+  loadBtn.disabled = true;
+  setStatus('Loading memories...', 'loading');
+  
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const url = new URL(tab.url);
+    const platform = Object.keys(platformMap).find(key => url.hostname.includes(key));
+    
+    // Request memories from background worker
+    const response = await chrome.runtime.sendMessage({ 
+      action: 'loadMemories', 
+      platform 
+    });
+    
+    if (response && response.success) {
+      // Copy to clipboard
+      await navigator.clipboard.writeText(response.formatted);
+      setStatus(`Copied ${response.count} memories`, 'success');
+    } else {
+      setStatus(response?.error || 'Load failed', 'error');
+    }
+  } catch (error) {
+    setStatus(`Error: ${error.message}`, 'error');
+  } finally {
+    syncBtn.disabled = false;
+    loadBtn.disabled = false;
+  }
+});
+
+// Initialize on load
+init();

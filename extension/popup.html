@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unified Memory</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Unified Memory</h1>
+    
+    <div class="status" id="status">
+      <span id="status-text">Ready</span>
+    </div>
+    
+    <div class="actions">
+      <button id="sync-btn" class="btn">Sync Memory</button>
+      <button id="load-btn" class="btn">Load Memories</button>
+    </div>
+    
+    <div class="info">
+      <div class="info-row">
+        <span class="label">Platform:</span>
+        <span id="platform" class="value">-</span>
+      </div>
+      <div class="info-row">
+        <span class="label">Last Sync:</span>
+        <span id="last-sync" class="value">Never</span>
+      </div>
+      <div class="info-row">
+        <span class="label">Memory Count:</span>
+        <span id="memory-count" class="value">0</span>
+      </div>
+    </div>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
