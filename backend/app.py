@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 import os
 from dotenv import load_dotenv
 import logging
+import traceback
 
 load_dotenv()
 
@@ -54,16 +55,20 @@ def sync():
             return jsonify({'success': False, 'error': 'Backend not initialized'}), 500
 
         data = request.json
-        logger.info(f"Sync data: {data.get('user_id')}, {len(data.get('messages', []))} messages")
         messages = data.get('messages', [])
         user_id = data.get('user_id')
         metadata = data.get('metadata', {})
 
+        logger.info(f"Sync data: {user_id}, {len(messages)} messages")
+
         if not messages or not user_id:
             return jsonify({'success': False, 'error': 'Missing messages or user_id'}), 400
 
-        # Add messages to mem0
-        result = m.add(messages, user_id=user_id, metadata=metadata)
+        # mem0.add() takes a single string (user message), not a list
+        # Combine all user messages into one conversation context
+        combined_text = "\n".join([msg['content'] for msg in messages if 'content' in msg])
+
+        result = m.add(combined_text, user_id=user_id)
         logger.info(f"Sync successful: {len(messages)} messages stored")
 
         return jsonify({
@@ -73,6 +78,7 @@ def sync():
         })
     except Exception as e:
         logger.error(f"Sync error: {e}")
+        logger.error(f"Full traceback:\n{traceback.format_exc()}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/load', methods=['GET'])
