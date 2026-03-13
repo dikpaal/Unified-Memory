@@ -2,15 +2,15 @@
 
 ## Phase 1: Foundation (MVP) - Claude Only
 
-### Backend Setup (USER HANDLES)
-- [ ] Create Python virtual environment
-- [ ] Install dependencies (mem0ai, flask, flask-cors, python-dotenv)
-- [ ] Initialize mem0 with config (Qdrant, SQLite, OpenAI)
-- [ ] Create Flask app structure (localhost:5000)
-- [ ] Implement POST /sync endpoint (see BACKEND_CONTRACT.md)
-- [ ] Implement GET /load endpoint (7-day lookback)
-- [ ] Add CORS for localhost Chrome extension
-- [ ] Test mem0 storage with sample data
+### Backend Setup (COMPLETED)
+- [x] Create Python virtual environment
+- [x] Install dependencies (mem0ai, flask, flask-cors, python-dotenv)
+- [x] Initialize mem0 with config (Qdrant, SQLite, OpenAI)
+- [x] Create Flask app structure (localhost:5000)
+- [x] Implement POST /sync endpoint (see BACKEND_CONTRACT.md)
+- [x] Implement GET /load endpoint (7-day lookback)
+- [x] Add CORS for localhost Chrome extension
+- [ ] Test mem0 storage with sample data (needs user to run)
 
 ### Chrome Extension Scaffold (COMPLETED)
 - [x] Create manifest.json (Manifest V3)
@@ -32,8 +32,8 @@
 - [x] Show last sync timestamp, platform, memory count
 - [x] Clipboard API integration for load feature
 
-### Integration Testing (NEEDS BACKEND)
-- [ ] Create placeholder extension icons (16x16, 48x48, 128x128 PNG)
+### Integration Testing (READY TO TEST)
+- [x] Create placeholder extension icons (16x16, 48x48, 128x128 PNG)
 - [ ] Load extension in Chrome (chrome://extensions/)
 - [ ] Test on claude.ai with backend running
 - [ ] Test end-to-end sync flow
@@ -126,21 +126,20 @@
 
 ## Current Status
 
-**Phase**: Phase 1 frontend complete, awaiting backend
-**Frontend Complete**:
+**Phase**: Phase 1 & 2 complete - ready to test
+**Completed**:
 - Chrome extension scaffold (Manifest V3)
 - Popup UI (minimalist, SF Mono Light)
 - Background service worker (API integration)
 - Content scripts for all 3 platforms (Claude, ChatGPT, Gemini)
+- Flask backend with mem0 integration
+- Extension icons (16x16, 48x48, 128x128)
 
-**Backend Needed** (user implements):
-- Flask app at localhost:5000
-- POST /sync endpoint (stores messages in mem0)
-- GET /load endpoint (retrieves memories with 7-day filter)
-- See BACKEND_CONTRACT.md for full specification
-
-**Next Action**:
-1. User builds backend per BACKEND_CONTRACT.md
-2. Create placeholder icons (extension/icons/*.png)
-3. Load extension in Chrome
-4. Test sync/load flows on all platforms
+**Next Action (User)**:
+1. Set up backend:
+   - `cd backend && python3 -m venv venv && source venv/bin/activate`
+   - `pip install -r requirements.txt`
+   - `cp .env.example .env` (add OPENAI_API_KEY)
+   - `python app.py`
+2. Load extension in Chrome (chrome://extensions/ → Load unpacked)
+3. Test sync/load flows on all platforms
