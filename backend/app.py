@@ -101,30 +101,44 @@ def load():
         for platform in platforms:
             user_id = f"{platform}_user"
             try:
-                # Search with empty query to get all memories
-                results = m.search("", user_id=user_id)
-                logger.info(f"Search results for {platform}: {results}")
+                # Get all memories for this user (try get_all first, fallback to search)
+                try:
+                    results = m.get_all(user_id=user_id)
+                except (AttributeError, TypeError):
+                    # Fallback: use search with a generic query
+                    logger.info(f"get_all not available, using search for {platform}")
+                    results = m.search("memory", user_id=user_id, limit=100)
 
-                if results and 'results' in results:
-                    for r in results['results']:
-                        # Parse timestamp
-                        created_str = r.get('created_at', '')
-                        try:
-                            created = datetime.fromisoformat(created_str.replace('Z', '+00:00'))
-                            if created > seven_days_ago:
-                                all_memories.append({
-                                    'platform': platform,
-                                    'memory': r.get('memory', ''),
-                                    'timestamp': created_str
-                                })
-                        except Exception as parse_error:
-                            # If timestamp parsing fails, include anyway
-                            logger.warning(f"Timestamp parse error: {parse_error}")
+                logger.info(f"Got memories for {platform}: {type(results)}, {results is not None}")
+
+                # Handle both dict with 'results' key or list directly
+                memory_list = []
+                if isinstance(results, dict) and 'results' in results:
+                    memory_list = results['results']
+                elif isinstance(results, list):
+                    memory_list = results
+
+                logger.info(f"Processing {len(memory_list)} memories for {platform}")
+
+                for r in memory_list:
+                    # Parse timestamp
+                    created_str = r.get('created_at', '')
+                    try:
+                        created = datetime.fromisoformat(created_str.replace('Z', '+00:00'))
+                        if created > seven_days_ago:
                             all_memories.append({
                                 'platform': platform,
                                 'memory': r.get('memory', ''),
                                 'timestamp': created_str
                             })
+                    except Exception as parse_error:
+                        # If timestamp parsing fails, include anyway
+                        logger.warning(f"Timestamp parse error: {parse_error}")
+                        all_memories.append({
+                            'platform': platform,
+                            'memory': r.get('memory', ''),
+                            'timestamp': created_str
+                        })
             except Exception as e:
                 # Continue if one platform fails
                 logger.error(f"Error loading from {platform}: {e}")

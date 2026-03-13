@@ -9,9 +9,15 @@ const memoryCountEl = document.getElementById('memory-count');
 
 // Platform detection
 const platformMap = {
-  'claude.ai': 'Claude',
-  'chatgpt.com': 'ChatGPT',
-  'gemini.google.com': 'Gemini'
+  'claude.ai': 'claude',
+  'chatgpt.com': 'chatgpt',
+  'gemini.google.com': 'gemini'
+};
+
+const platformDisplayNames = {
+  'claude': 'Claude',
+  'chatgpt': 'ChatGPT',
+  'gemini': 'Gemini'
 };
 
 // Initialize popup
@@ -21,9 +27,11 @@ async function init() {
   const hostname = url.hostname;
   
   // Detect platform
-  const platform = Object.keys(platformMap).find(key => hostname.includes(key));
-  if (platform) {
-    platformEl.textContent = platformMap[platform];
+  const platformKey = Object.keys(platformMap).find(key => hostname.includes(key));
+  if (platformKey) {
+    const platform = platformMap[platformKey];
+    platformEl.textContent = platformDisplayNames[platform];
+    platformEl.dataset.platform = platform;  // Store normalized name
   } else {
     platformEl.textContent = 'Unknown';
     syncBtn.disabled = true;
@@ -75,30 +83,28 @@ syncBtn.addEventListener('click', async () => {
   syncBtn.disabled = true;
   loadBtn.disabled = true;
   setStatus('Syncing...', 'loading');
-  
+
   try {
+    const platform = platformEl.dataset.platform;  // Get normalized platform name
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    
+
     // Send message to content script to scrape
     const response = await chrome.tabs.sendMessage(tab.id, { action: 'sync' });
-    
+
     if (response && response.success) {
       setStatus(`Synced ${response.count} messages`, 'success');
-      
+
       // Update stored data
-      const url = new URL(tab.url);
-      const platform = Object.keys(platformMap).find(key => url.hostname.includes(key));
-      
       const lastSync = await chrome.storage.local.get('lastSync') || {};
       lastSync.lastSync = lastSync.lastSync || {};
       lastSync.lastSync[platform] = new Date().toISOString();
       await chrome.storage.local.set(lastSync);
-      
+
       const memoryCount = await chrome.storage.local.get('memoryCount') || {};
       memoryCount.memoryCount = memoryCount.memoryCount || {};
       memoryCount.memoryCount[platform] = response.count;
       await chrome.storage.local.set(memoryCount);
-      
+
       // Reload display
       loadStoredData(platform);
     } else {
@@ -117,18 +123,16 @@ loadBtn.addEventListener('click', async () => {
   syncBtn.disabled = true;
   loadBtn.disabled = true;
   setStatus('Loading memories...', 'loading');
-  
+
   try {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    const url = new URL(tab.url);
-    const platform = Object.keys(platformMap).find(key => url.hostname.includes(key));
-    
+    const platform = platformEl.dataset.platform;  // Get normalized platform name
+
     // Request memories from background worker
-    const response = await chrome.runtime.sendMessage({ 
-      action: 'loadMemories', 
-      platform 
+    const response = await chrome.runtime.sendMessage({
+      action: 'loadMemories',
+      platform
     });
-    
+
     if (response && response.success) {
       // Copy to clipboard
       await navigator.clipboard.writeText(response.formatted);
