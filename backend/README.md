@@ -24,13 +24,13 @@ cp .env.example .env
 python app.py
 ```
 
-Backend runs at http://localhost:5000
+Backend runs at http://localhost:5001
 
 ## Test
 
 ```bash
 # Test sync
-curl -X POST http://localhost:5000/sync \
+curl -X POST http://localhost:5001/sync \
   -H "Content-Type: application/json" \
   -d '{
     "messages": [{"role": "user", "content": "Test message"}],
@@ -39,5 +39,5 @@ curl -X POST http://localhost:5000/sync \
   }'
 
 # Test load
-curl http://localhost:5000/load?platform=claude
+curl http://localhost:5001/load?platform=claude
 ```

@@ -183,13 +183,15 @@ if __name__ == '__main__':
         logger.error("Create .env file with: OPENAI_API_KEY=your_key_here")
         exit(1)
 
+    PORT = 5001  # Changed from 5000 (macOS uses 5000 for AirPlay)
+
     logger.info("="*50)
     logger.info("Starting Unified Memory backend")
-    logger.info("Backend URL: http://localhost:5000")
+    logger.info(f"Backend URL: http://localhost:{PORT}")
     logger.info(f"mem0 status: {'Ready' if m else 'Failed'}")
     logger.info("CORS: Enabled for all origins")
     logger.info("="*50)
-    logger.info("Test with: curl http://localhost:5000/health")
+    logger.info(f"Test with: curl http://localhost:{PORT}/health")
     logger.info("="*50)
 
-    app.run(host='localhost', port=5000, debug=True)
+    app.run(host='localhost', port=PORT, debug=True)

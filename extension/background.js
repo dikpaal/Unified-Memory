@@ -1,6 +1,6 @@
 // Background service worker - handles API communication with backend
 
-const BACKEND_URL = 'http://localhost:5000';
+const BACKEND_URL = 'http://localhost:5001';  // Changed from 5000 (macOS uses 5000 for AirPlay)
 
 // Listen for messages from popup and content scripts
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
