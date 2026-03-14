@@ -44,101 +44,51 @@ async function scrapeAndSync(sendResponse) {
 function scrapeFullConversation() {
   const messages = [];
 
-  // Find all message containers in conversation
-  // Claude wraps each message (user or assistant) in its own container
-  const conversationSelectors = [
-    '.grid.grid-cols-1',  // Main conversation container
-    '[role="presentation"]',
-    'div[class*="conversation"]'
-  ];
+  // Find all user messages using data-testid attribute
+  const userMessages = document.querySelectorAll('[data-testid="user-message"]');
 
-  let conversationContainer = null;
-  for (const selector of conversationSelectors) {
-    conversationContainer = document.querySelector(selector);
-    if (conversationContainer) break;
-  }
+  // Find all assistant messages using data-is-streaming attribute
+  const assistantMessages = document.querySelectorAll('[data-is-streaming="false"]');
 
-  if (!conversationContainer) {
-    // Fallback: get document body
-    conversationContainer = document.body;
-  }
+  // Collect all messages with their DOM position
+  const allMessages = [];
 
-  // Find all message elements (both user and assistant)
-  const allMessageElements = conversationContainer.querySelectorAll('div');
-
-  // Process each element to determine if it's a message and its role
-  const messageData = [];
-
-  allMessageElements.forEach((el, index) => {
+  userMessages.forEach(el => {
     const text = extractText(el);
-
-    // Skip if empty or too short
-    if (!text || text.length < 3) return;
-
-    // Skip system messages
-    if (isSystemMessage(text)) return;
-
-    // Determine role based on selectors/classes
-    let role = null;
-
-    // Check for user message indicators
-    const userIndicators = [
-      'font-user-message',
-      'UserMessage',
-      'user-message',
-      'data-test-render-count'
-    ];
-
-    const assistantIndicators = [
-      'font-claude-message',
-      'AssistantMessage',
-      'assistant-message',
-      'model-response'
-    ];
-
-    // Check classes and attributes
-    const elClasses = el.className || '';
-    const elDataAttrs = Array.from(el.attributes || []).map(a => a.name).join(' ');
-    const combined = elClasses + ' ' + elDataAttrs;
-
-    if (userIndicators.some(ind => combined.includes(ind))) {
-      role = 'user';
-    } else if (assistantIndicators.some(ind => combined.includes(ind))) {
-      role = 'assistant';
-    }
-
-    // Additional heuristic: check parent/child structure
-    if (!role) {
-      // User messages often have specific parent structures
-      const parent = el.parentElement;
-      if (parent) {
-        const parentClass = parent.className || '';
-        if (parentClass.includes('user') || parentClass.includes('User')) {
-          role = 'user';
-        } else if (parentClass.includes('claude') || parentClass.includes('assistant') || parentClass.includes('Assistant')) {
-          role = 'assistant';
-        }
-      }
-    }
-
-    // If we found a role, add to messages
-    if (role && text.length > 10) {  // Min 10 chars to avoid UI fragments
-      messageData.push({
-        index: index,  // Preserve DOM order
-        role: role,
-        content: text
+    if (text && text.length > 10) {
+      allMessages.push({
+        element: el,
+        role: 'user',
+        content: text,
+        position: getElementPosition(el)
       });
     }
   });
 
-  // Sort by DOM order (index) to maintain chronological order
-  messageData.sort((a, b) => a.index - b.index);
+  assistantMessages.forEach(el => {
+    // Assistant messages are in a parent div, get the content from .standard-markdown or .progressive-markdown
+    const contentDiv = el.querySelector('.standard-markdown, .progressive-markdown');
+    if (contentDiv) {
+      const text = extractText(contentDiv);
+      if (text && text.length > 10 && !isSystemMessage(text)) {
+        allMessages.push({
+          element: el,
+          role: 'assistant',
+          content: text,
+          position: getElementPosition(el)
+        });
+      }
+    }
+  });
+
+  // Sort by DOM position to maintain chronological order
+  allMessages.sort((a, b) => a.position - b.position);
 
   // Remove duplicates based on content
   const seen = new Set();
   const uniqueMessages = [];
 
-  for (const msg of messageData) {
+  for (const msg of allMessages) {
     if (!seen.has(msg.content)) {
       seen.add(msg.content);
       uniqueMessages.push({
@@ -149,6 +99,24 @@ function scrapeFullConversation() {
   }
 
   return uniqueMessages;
+}
+
+// Helper function to get DOM position of an element
+function getElementPosition(element) {
+  let position = 0;
+  let el = element;
+
+  while (el) {
+    if (el.previousSibling) {
+      position++;
+      el = el.previousSibling;
+    } else {
+      el = el.parentElement;
+      if (el) position += 1000; // Weight parent traversal higher
+    }
+  }
+
+  return position;
 }
 
 // Extract user messages from DOM (kept for backwards compatibility)
