@@ -66,8 +66,10 @@ def sync():
         # Combine all user messages into one conversation context
         combined_text = "\n".join([msg['content'] for msg in messages if 'content' in msg])
 
-        result = m.add(combined_text, user_id=USER_ID)
+        result = m.add(combined_text, user_id=USER_ID, metadata=metadata)
         logger.info(f"Sync successful: {len(messages)} messages stored")
+        
+        print("FROM SYNC: ", messages)
 
         return jsonify({
             'success': True,
@@ -125,15 +127,10 @@ def load():
             return jsonify({'success': False, 'error': 'Backend not initialized'}), 500
 
         current_platform = request.args.get('platform')
-        logger.info(f"Load request for platform: {current_platform}")
-
-        if not current_platform:
-            return jsonify({'success': False, 'error': 'Missing platform parameter'}), 400
-
         # Get memories from other platforms
         seven_days_ago = datetime.now(timezone.utc) - timedelta(days=7)
 
-        platforms = ['chatgpt', 'claude', 'gemini']
+        platforms = {'chatgpt', 'claude', 'gemini'}
         if current_platform in platforms:
             platforms.remove(current_platform)
 
@@ -150,18 +147,19 @@ def load():
             
             logger.info(f"Processing {len(memory_list)} memories for {platform}")
 
-            for r in memory_list:
+            for memory in memory_list:
                 # Parse timestamp
-                created_str = r.get('created_at', '')
+                created_str = memory.get('created_at', '')
                 created = datetime.fromisoformat(created_str.replace('Z', '+00:00'))
-                if created > seven_days_ago:
+                if memory['metadata']['platform'] == platform and created > seven_days_ago:
                     all_memories.append({
                         'platform': platform,
-                        'memory': r.get('memory', ''),
+                        'memory': memory.get('memory', ''),
                         'timestamp': created_str
                     })
-
+                    
         # Format memories
+        print("ALL MEMORIES: ", all_memories)
         formatted = format_memories(all_memories)
         logger.info(f"Load successful: {len(all_memories)} memories found")
 
@@ -183,8 +181,10 @@ def format_memories(memories):
     by_platform = {}
     for m in memories:
         platform = m['platform'].title()
+        print("PLATFORM: ", platform)
         if platform not in by_platform:
             by_platform[platform] = []
+
         by_platform[platform].append(m)
 
     for platform, items in by_platform.items():
