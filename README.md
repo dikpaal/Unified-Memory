@@ -1,7 +1,7 @@
 # Unified-Memory
 A brain that holds all memory from all the AI apps that you use
 
-Chrome extension + mem0 backend for syncing memories across ChatGPT, Claude, and Gemini.
+Chrome extension + mem0 backend for syncing memories across ChatGPT and Claude.
 
 ## Quick Start
 
@@ -21,7 +21,7 @@ python app.py
 2. Enable "Developer mode"
 3. Click "Load unpacked"
 4. Select `/extension` folder
-5. Visit claude.ai, chatgpt.com, or gemini.google.com
+5. Visit claude.ai or chatgpt.com
 6. Click extension icon → "Sync Memory" or "Load Memories"
 
 ## How It Works

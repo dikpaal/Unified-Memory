@@ -57,7 +57,7 @@ GET /load?platform=claude
 **Response**:
 ```json
 {
-  "formatted_text": "Update your memory with these facts from other platforms:\n\nFrom ChatGPT (2026-03-12 14:00):\n- Name is Alex. Enjoys basketball and gaming.\n- User is allergic to peanuts.\n\nFrom Gemini (2026-03-12 13:30):\n- User prefers high-protein diet plan.",
+  "formatted_text": "Update your memory with these facts from other platforms:\n\nFrom ChatGPT (2026-03-12 14:00):\n- Name is Alex. Enjoys basketball and gaming.\n- User is allergic to peanuts.",
   "memory_count": 2
 }
 ```
@@ -73,9 +73,9 @@ def load():
     # Query mem0 for other platforms (7-day lookback)
     seven_days_ago = datetime.now() - timedelta(days=7)
     
-    # Search across chatgpt_user, claude_user, gemini_user
+    # Search across chatgpt_user, claude_user
     # Exclude current_platform
-    other_platforms = ['chatgpt', 'claude', 'gemini']
+    other_platforms = ['chatgpt', 'claude']
     other_platforms.remove(current_platform)
     
     all_memories = []

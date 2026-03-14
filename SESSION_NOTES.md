@@ -3,10 +3,10 @@
 ## 2026-03-12 - Initial Planning Session
 
 ### Context
-Fresh repository. User wants Chrome extension + self-hosted mem0 backend for syncing memories across ChatGPT, Claude.ai, and Gemini.
+Fresh repository. User wants Chrome extension + self-hosted mem0 backend for syncing memories across ChatGPT and Claude.ai.
 
 ### Requirements Gathered
-- **Platforms**: claude.ai, chatgpt.com, gemini.google.com
+- **Platforms**: claude.ai, chatgpt.com
 - **Memory Backend**: Self-hosted mem0 (local Qdrant + SQLite)
 - **Sync Method**: Manual "Sync Memory" button (not auto-capture)
 - **Load Method**: Clipboard approach (not auto-inject)
@@ -54,7 +54,7 @@ Extension sends raw user messages → mem0 extracts semantic facts → backend f
 
 ### Project State - END OF SESSION
 - **Phase**: Phase 1 frontend COMPLETE
-- **Completed**: Full Chrome extension (all 3 platforms)
+- **Completed**: Full Chrome extension (Claude + ChatGPT)
 - **Blockers**: Awaiting user's backend implementation
 - **Git**: Uncommitted changes (extension code ready)
 
@@ -65,12 +65,11 @@ Extension sends raw user messages → mem0 extracts semantic facts → backend f
 ### Work Completed
 
 **Chrome Extension Built** (`/extension` directory):
-- `manifest.json`: Manifest V3 config with permissions for all 3 platforms
+- `manifest.json`: Manifest V3 config with permissions for both platforms
 - `popup.html/css/js`: Minimalist UI (SF Mono Light, dark theme with #1a1a1a bg, #e0e0e0 text)
 - `background.js`: Service worker handling API calls to localhost:5000
 - `content-claude.js`: Claude.ai scraper with multiple selector fallbacks
 - `content-chatgpt.js`: ChatGPT scraper
-- `content-gemini.js`: Gemini scraper
 
 **Features Implemented**:
 1. **Sync Memory**: Scrapes user messages → POST to /sync → stores in mem0
@@ -103,7 +102,7 @@ Full specification in `BACKEND_CONTRACT.md` with code examples.
 1. Build Flask backend per BACKEND_CONTRACT.md
 2. Create placeholder icons (`extension/icons/icon16.png`, icon48.png, icon128.png)
 3. Load extension: Chrome → chrome://extensions/ → Load unpacked → select `/extension`
-4. Test on claude.ai, chatgpt.com, gemini.google.com
+4. Test on claude.ai and chatgpt.com
 
 ### Testing Plan
 
@@ -124,7 +123,7 @@ Once backend running:
 
 ### Notes for Next Session
 - Phase 1 frontend 100% complete
-- Phase 2 frontend also mostly done (all 3 content scripts exist)
+- Phase 2 frontend also mostly done (both content scripts exist)
 - Backend is blocking factor for testing
 - Once backend works, move to Phase 4 (polish/reliability)
 
@@ -158,7 +157,7 @@ Once backend running:
 
 **Backend Architecture**:
 - mem0 configured with OpenAI (gpt-4o-mini for LLM, text-embedding-3-small for embeddings)
-- Platform-specific user IDs (claude_user, chatgpt_user, gemini_user)
+- Platform-specific user IDs (claude_user, chatgpt_user)
 - 7-day lookback filter for cross-platform memory retrieval
 - Formatted output grouped by platform with timestamps
 
@@ -180,7 +179,7 @@ All Phase 1 & 2 components complete:
 2. Configure .env with OPENAI_API_KEY
 3. Run backend (`python app.py`)
 4. Load extension in Chrome
-5. Test on claude.ai, chatgpt.com, gemini.google.com
+5. Test on claude.ai and chatgpt.com
 
 ### Known Considerations
 
@@ -202,7 +201,7 @@ All Phase 1 & 2 components complete:
 
 **Issue 2: Platform Name Mismatch**
 - Problem: Extension sent "chatgpt.com", backend expected "chatgpt"
-- Solution: Normalized platform names (claude, chatgpt, gemini)
+- Solution: Normalized platform names (claude, chatgpt)
 - Extension now stores normalized names in dataset attribute
 - Files updated: extension/popup.js
 
@@ -223,7 +222,7 @@ All Phase 1 & 2 components complete:
 **Next Testing Needed:**
 - Sync Memory button with actual conversations
 - Cross-platform memory loading
-- All 3 platforms (claude.ai, chatgpt.com, gemini.google.com)
+- Both platforms (claude.ai, chatgpt.com)
 
 ### Code Improvements
 

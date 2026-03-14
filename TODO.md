@@ -42,7 +42,7 @@
 - [ ] Test sync flow with real conversations
 - [ ] Test cross-platform memory loading
 - [ ] Verify mem0 storage (check SQLite/Qdrant)
-- [ ] Test all 3 platforms (claude, chatgpt, gemini)
+- [ ] Test both platforms (claude, chatgpt)
 
 ---
 
@@ -54,16 +54,10 @@
 - [ ] Test scraping accuracy with real conversations
 - [ ] Refine selectors if needed
 
-### Gemini Support (COMPLETED - NEEDS TESTING)
-- [x] Create content script for gemini.google.com
-- [x] Add to manifest host permissions
-- [ ] Test scraping accuracy with real conversations
-- [ ] Refine selectors if needed
-
 ### Platform Detection (COMPLETED)
 - [x] Popup detects current platform from URL
 - [x] Content scripts pass platform identifier to backend
-- [ ] Test sync on all three platforms
+- [ ] Test sync on both platforms
 
 ---
 
@@ -135,7 +129,7 @@
 - Chrome extension scaffold (Manifest V3)
 - Popup UI (minimalist, SF Mono Light)
 - Background service worker (API integration)
-- Content scripts for all 3 platforms (Claude, ChatGPT, Gemini)
+- Content scripts for both platforms (Claude, ChatGPT)
 - Flask backend with mem0 integration (port 5001)
 - Extension icons (16x16, 48x48, 128x128)
 - Logging and health check endpoint
@@ -150,7 +144,7 @@
 - Error handling
 
 **Next Testing**:
-1. Sync Memory on all 3 platforms with real conversations
+1. Sync Memory on both platforms with real conversations
 2. Verify mem0 storage works
 3. Test cross-platform memory loading
 4. Edge cases (network errors, malformed data)

@@ -2,12 +2,12 @@
 
 ## Problem Statement
 
-User leverages ChatGPT (free), Claude.ai Pro, and Gemini (free) for different tasks, but each platform maintains isolated memory with no cross-awareness. Conversations happening on one platform remain unknown to others.
+User leverages ChatGPT and Claude for different tasks, but each platform maintains isolated memory with no cross-awareness. Conversations happening on one platform remain unknown to the other.
 
 ## Solution
 
 Chrome extension + local mem0 backend that:
-1. Captures user messages from claude.ai, chatgpt.com, gemini.google.com
+1. Captures user messages from claude.ai and chatgpt.com
 2. Stores memories locally with timestamps using mem0
 3. Enables loading memories from other platforms into current conversation via clipboard
 
@@ -30,13 +30,13 @@ Chrome extension + local mem0 backend that:
 - Talk to Claude 11:00-12:00, sync (last sync: 12:00)
 - Talk to ChatGPT 14:00-15:00 about diet, sync
 - Open Claude, click "Load Memories"
-- Paste formatted ChatGPT/Gemini memories (12:00+) into Claude
+- Paste formatted ChatGPT memories (12:00+) into Claude
 - Send, continue diet conversation with Claude now aware
 
 ## Technical Architecture
 
 ### Frontend: Chrome Extension (Manifest V3)
-- **Content Scripts**: One per platform (claude.ai, chatgpt.com, gemini.google.com)
+- **Content Scripts**: One per platform (claude.ai, chatgpt.com)
   - DOM scraping logic for user messages
 - **Background Service Worker**: Coordinates communication between content scripts and backend
 - **Popup UI**:
@@ -94,9 +94,6 @@ Update your memory with these facts from other platforms:
 From ChatGPT (2026-03-12 14:00):
 - Name is Alex. Enjoys basketball and gaming.
 - User is allergic to peanuts.
-
-From Gemini (2026-03-12 13:30):
-- User prefers high-protein diet plan.
 ```
 
 ### Tech Stack Decision
@@ -142,15 +139,14 @@ Both plain JS and TypeScript are widely used. Decision factors:
 **Deliverable**: Can click "Sync Memory" on Claude, see memories stored in mem0
 
 ### Phase 2: Multi-Platform Scraping
-**Goal**: Sync working across all three platforms
+**Goal**: Sync working across both platforms
 
 **Tasks**:
 - Content script for chatgpt.com (different DOM selectors)
-- Content script for gemini.google.com (different DOM selectors)
 - Platform detection in background service worker
-- Test sync on all three platforms
+- Test sync on both platforms
 
-**Deliverable**: "Sync Memory" works on Claude, ChatGPT, Gemini
+**Deliverable**: "Sync Memory" works on Claude and ChatGPT
 
 ### Phase 3: Memory Loading
 **Goal**: Load memories from other platforms via clipboard
@@ -165,7 +161,7 @@ Both plain JS and TypeScript are widely used. Decision factors:
 - Clipboard API integration
 - Success notification with memory count
 
-**Deliverable**: Click "Load Memories" on ChatGPT → copies Claude+Gemini memories (7-day) to clipboard → paste into ChatGPT
+**Deliverable**: Click "Load Memories" on ChatGPT → copies Claude memories (7-day) to clipboard → paste into ChatGPT
 
 ### Phase 4: Polish & Reliability
 **Goal**: Production-ready UX
@@ -205,7 +201,7 @@ Both plain JS and TypeScript are widely used. Decision factors:
 
 ## Success Criteria
 
-1. Can sync memories from all three platforms (Claude, ChatGPT, Gemini)
+1. Can sync memories from both platforms (Claude, ChatGPT)
 2. Memories stored with timestamps and platform metadata
 3. Can load cross-platform memories via clipboard
 4. Scraping resilient to minor UI changes (fallback selectors)
