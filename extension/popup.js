@@ -14,14 +14,12 @@ const closeMemoriesBtn = document.getElementById('close-memories');
 // Platform detection
 const platformMap = {
   'claude.ai': 'claude',
-  'chatgpt.com': 'chatgpt',
-  'gemini.google.com': 'gemini'
+  'chatgpt.com': 'chatgpt'
 };
 
 const platformDisplayNames = {
   'claude': 'Claude',
-  'chatgpt': 'ChatGPT',
-  'gemini': 'Gemini'
+  'chatgpt': 'ChatGPT'
 };
 
 // Initialize popup
@@ -40,7 +38,7 @@ async function init() {
     platformEl.textContent = 'Unknown';
     syncBtn.disabled = true;
     loadBtn.disabled = true;
-    setStatus('Navigate to Claude, ChatGPT, or Gemini', 'error');
+    setStatus('Navigate to Claude or ChatGPT', 'error');
     return;
   }
   

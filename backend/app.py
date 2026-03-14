@@ -127,7 +127,7 @@ def load():
         # Get memories from other platforms
         seven_days_ago = datetime.now(timezone.utc) - timedelta(days=7)
 
-        platforms = {'chatgpt', 'claude', 'gemini'}
+        platforms = {'chatgpt', 'claude'}
         if current_platform in platforms:
             platforms.remove(current_platform)
 

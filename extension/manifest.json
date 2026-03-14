@@ -1,42 +1,45 @@
 {
-  "manifest_version": 3,
-  "name": "Unified Memory",
-  "version": "1.0.0",
-  "description": "Sync memories across ChatGPT, Claude, and Gemini using mem0",
-  "permissions": [
-    "activeTab",
-    "clipboardWrite",
-    "storage"
-  ],
-  "host_permissions": [
-    "https://claude.ai/*",
-    "https://chatgpt.com/*",
-    "https://gemini.google.com/*"
-  ],
-  "background": {
-    "service_worker": "background.js"
-  },
-  "content_scripts": [
-    {
-      "matches": ["https://claude.ai/*"],
-      "js": ["content-claude.js"]
+    "manifest_version": 3,
+    "name": "Unified Memory",
+    "version": "1.0.0",
+    "description": "Sync memories across ChatGPT and Claude using mem0",
+    "permissions": [
+        "activeTab",
+        "clipboardWrite",
+        "storage"
+    ],
+    "host_permissions": [
+        "https://claude.ai/*",
+        "https://chatgpt.com/*"
+    ],
+    "background": {
+        "service_worker": "background.js"
     },
-    {
-      "matches": ["https://chatgpt.com/*"],
-      "js": ["content-chatgpt.js"]
+    "content_scripts": [
+        {
+            "matches": [
+                "https://claude.ai/*"
+            ],
+            "js": [
+                "content-claude.js"
+            ]
+        },
+        {
+            "matches": [
+                "https://chatgpt.com/*"
+            ],
+            "js": [
+                "content-chatgpt.js"
+            ]
+        }
+    ],
+    "action": {
+        "default_popup": "popup.html",
+        "default_title": "Unified Memory"
     },
-    {
-      "matches": ["https://gemini.google.com/*"],
-      "js": ["content-gemini.js"]
+    "icons": {
+        "16": "icons/icon16.png",
+        "48": "icons/icon48.png",
+        "128": "icons/icon128.png"
     }
-  ],
-  "action": {
-    "default_popup": "popup.html",
-    "default_title": "Unified Memory"
-  },
-  "icons": {
-    "16": "icons/icon16.png",
-    "48": "icons/icon48.png",
-    "128": "icons/icon128.png"
-  }
 }
