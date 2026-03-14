@@ -8,19 +8,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-// Scrape user messages from Gemini interface
+// Scrape full conversation from Gemini interface
 async function scrapeAndSync(sendResponse) {
   try {
-    const messages = scrapeUserMessages();
-    
+    const messages = scrapeFullConversation();
+
     if (messages.length === 0) {
-      sendResponse({ 
-        success: false, 
-        error: 'No messages found. Start a conversation first.' 
+      sendResponse({
+        success: false,
+        error: 'No messages found. Start a conversation first.'
       });
       return;
     }
-    
+
     const response = await chrome.runtime.sendMessage({
       action: 'syncToBackend',
       data: {
@@ -28,18 +28,145 @@ async function scrapeAndSync(sendResponse) {
         platform: 'gemini'
       }
     });
-    
+
     sendResponse(response);
   } catch (error) {
     console.error('Scrape error:', error);
-    sendResponse({ 
-      success: false, 
-      error: error.message 
+    sendResponse({
+      success: false,
+      error: error.message
     });
   }
 }
 
-// Extract user messages from DOM
+// Scrape full conversation (user + assistant messages) in chronological order
+function scrapeFullConversation() {
+  const messages = [];
+
+  // Gemini has a structured conversation layout
+  const conversationSelectors = [
+    'chat-window',
+    '[role="main"]',
+    'main',
+    '.conversation-container'
+  ];
+
+  let conversationContainer = null;
+  for (const selector of conversationSelectors) {
+    conversationContainer = document.querySelector(selector);
+    if (conversationContainer) break;
+  }
+
+  if (!conversationContainer) {
+    conversationContainer = document.body;
+  }
+
+  // Find message elements
+  const allDivs = conversationContainer.querySelectorAll('div');
+
+  const messageData = [];
+
+  allDivs.forEach((el, index) => {
+    const text = extractText(el);
+
+    // Skip if empty or too short
+    if (!text || text.length < 10) return;
+
+    // Skip system messages
+    if (isSystemMessage(text)) return;
+
+    // Determine role based on selectors/classes
+    let role = null;
+
+    // User message indicators for Gemini
+    const userIndicators = [
+      'user-message',
+      'user-query',
+      'UserMessage',
+      'query-text',
+      'user-input'
+    ];
+
+    // Assistant message indicators for Gemini
+    const assistantIndicators = [
+      'model-response',
+      'assistant-message',
+      'gemini-response',
+      'model-output',
+      'response-text',
+      'markdown-render'
+    ];
+
+    // Check classes and attributes
+    const elClasses = el.className || '';
+    const elDataAttrs = Array.from(el.attributes || []).map(a => a.name + '=' + a.value).join(' ');
+    const combined = elClasses + ' ' + elDataAttrs;
+
+    if (userIndicators.some(ind => combined.toLowerCase().includes(ind.toLowerCase()))) {
+      role = 'user';
+    } else if (assistantIndicators.some(ind => combined.toLowerCase().includes(ind.toLowerCase()))) {
+      role = 'assistant';
+    }
+
+    // Additional heuristic: check parent structure
+    if (!role) {
+      const parent = el.parentElement;
+      if (parent) {
+        const parentClass = (parent.className || '').toLowerCase();
+        const parentData = Array.from(parent.attributes || []).map(a => a.name + '=' + a.value).join(' ').toLowerCase();
+        const parentCombined = parentClass + ' ' + parentData;
+
+        if (userIndicators.some(ind => parentCombined.includes(ind.toLowerCase()))) {
+          role = 'user';
+        } else if (assistantIndicators.some(ind => parentCombined.includes(ind.toLowerCase()))) {
+          role = 'assistant';
+        }
+      }
+    }
+
+    // Fallback: check for specific patterns in the DOM tree
+    if (!role) {
+      // User messages typically have simpler structure
+      // Model responses have markdown/code blocks
+      const hasCodeBlock = el.querySelector('pre, code');
+      const hasMarkdown = el.querySelector('.markdown, [class*="markdown"]');
+
+      if (hasCodeBlock || hasMarkdown) {
+        role = 'assistant';
+      }
+    }
+
+    // If we found a role, add to messages
+    if (role && text.length > 10) {
+      messageData.push({
+        index: index,
+        role: role,
+        content: text
+      });
+    }
+  });
+
+  // Sort by DOM order to maintain chronological order
+  messageData.sort((a, b) => a.index - b.index);
+
+  // Remove duplicates based on content
+  const seen = new Set();
+  const uniqueMessages = [];
+
+  for (const msg of messageData) {
+    if (!seen.has(msg.content)) {
+      seen.add(msg.content);
+      uniqueMessages.push({
+        role: msg.role,
+        content: msg.content
+      });
+    }
+  }
+
+  return uniqueMessages;
+}
+
+// Extract user messages from DOM (kept for backwards compatibility)
 function scrapeUserMessages() {
   const messages = [];
   

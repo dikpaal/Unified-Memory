@@ -97,9 +97,6 @@ def get_memories():
 
         # Get all memories for this user
         results = m.get_all(user_id=USER_ID)
-
-        # Handle response format
-        memory_list = []
         memory_list = results['results']
 
         logger.info(f"Found {len(memory_list)} memories")
@@ -140,13 +137,8 @@ def load():
 
             results = m.get_all(user_id=USER_ID)
             logger.info(f"Got memories for {platform}: {type(results)}, {results is not None}")
-
-            # Handle both dict with 'results' key or list directly
-            memory_list = []
             memory_list = results['results']
             
-            logger.info(f"Processing {len(memory_list)} memories for {platform}")
-
             for memory in memory_list:
                 # Parse timestamp
                 created_str = memory.get('created_at', '')
