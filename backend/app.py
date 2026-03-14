@@ -16,6 +16,8 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 CORS(app)
 
+USER_ID = "dikpaal-test"
+
 # Initialize mem0
 logger.info("Initializing mem0...")
 config = {
@@ -56,19 +58,15 @@ def sync():
 
         data = request.json
         messages = data.get('messages', [])
-        user_id = data.get('user_id')
         metadata = data.get('metadata', {})
 
-        logger.info(f"Sync data: {user_id}, {len(messages)} messages")
-
-        if not messages or not user_id:
-            return jsonify({'success': False, 'error': 'Missing messages or user_id'}), 400
+        logger.info(f"Sync data: {len(messages)} messages")
 
         # mem0.add() takes a single string (user message), not a list
         # Combine all user messages into one conversation context
         combined_text = "\n".join([msg['content'] for msg in messages if 'content' in msg])
 
-        result = m.add(combined_text, user_id=user_id)
+        result = m.add(combined_text, user_id=USER_ID)
         logger.info(f"Sync successful: {len(messages)} messages stored")
 
         return jsonify({
@@ -93,11 +91,10 @@ def get_memories():
         if not platform:
             return jsonify({'success': False, 'error': 'Missing platform'}), 400
 
-        user_id = f"{platform}_user"
-        logger.info(f"Fetching memories for {user_id}")
+        logger.info(f"Fetching memories for {USER_ID}")
 
         # Get all memories for this user
-        results = m.get_all(user_id=user_id)
+        results = m.get_all(user_id=USER_ID)
 
         # Handle response format
         memory_list = []
@@ -143,9 +140,8 @@ def load():
         all_memories = []
 
         for platform in platforms:
-            user_id = f"{platform}_user"
 
-            results = m.get_all(user_id=user_id)
+            results = m.get_all(user_id=USER_ID)
             logger.info(f"Got memories for {platform}: {type(results)}, {results is not None}")
 
             # Handle both dict with 'results' key or list directly
