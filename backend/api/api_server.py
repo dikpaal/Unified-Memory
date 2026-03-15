@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from services.memory_service import MemoryService
+from backend.services.memory_service import MemoryService
 
 
 class APIServer:
@@ -64,7 +64,9 @@ class APIServer:
         platform = request.args.get("platform")
 
         memories = self.memory_service.load_cross_platform_memories(platform)
+        formatted_text = self.memory_service.format_memories_for_load(memories)
 
         return jsonify({
+            "formatted_text": formatted_text,
             "memory_count": len(memories)
         })

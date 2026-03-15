@@ -1,8 +1,7 @@
 from datetime import datetime
-from datetime import datetime
 from backend.db.kv_store import KVStore
-from backend.llms.gemini import GeminiGenerator
-from models.models import Memory
+from backend.generators.gemini_generator import GeminiGenerator
+from backend.models.models import Memory
 
 
 class MemoryService:
@@ -59,3 +58,14 @@ class MemoryService:
             loaded_memories.extend(memories)
 
         return loaded_memories
+
+    def format_memories_for_load(self, memories):
+        """Format memories as text for AI to update its memory"""
+        if not memories:
+            return "No new memories from other platforms."
+
+        text = "Update your memory with these facts from other platforms:\n\n"
+        for memory in memories:
+            text += f"- {memory.memory}\n"
+
+        return text.strip()

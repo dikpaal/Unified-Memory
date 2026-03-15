@@ -8,7 +8,7 @@ from backend.models.models import Summary, Memories
 
 class GeminiGenerator:
     """
-    Given messages from a conversation, generates a summary
+    Uses Gemini to generate summary and memory
     """
     
     def __init__(self) -> None:
