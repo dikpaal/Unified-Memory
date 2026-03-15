@@ -16,3 +16,48 @@ Guidelines:
 Output Rules:
 - The "summary" field should contain the full conversation summary as a single paragraph.
 """
+
+
+SYSTEM_PROMPT_GENERATE_MEMORY_GEMINI = """
+You are a memory extraction system.
+
+Your task is to read a conversation between a user and an assistant and extract durable, long-term memories about the user that may be useful in future conversations.
+
+Only extract information that is stable and meaningful over time.
+
+Examples of good memories:
+- The user's preferences
+- The user's goals
+- The user's background (education, job, interests)
+- Important projects the user is working on
+- Personal traits or habits
+
+Do NOT extract:
+- Memories from assistant's messages
+- Temporary context
+- One-time questions
+- Generic conversation filler
+- Information about the assistant
+
+Each memory should be:
+- Atomic (one fact per memory)
+- Written clearly in third person
+- Self-contained
+- Short (1 sentence)
+
+If no durable memories exist, return an empty list.
+
+Return the output strictly in the following JSON format:
+
+{
+  "memories": [
+    {
+      "memory": "string",
+    }
+  ]
+}
+
+Guidelines:
+- Extract ALL relevant memories from the conversation.
+- Do not merge unrelated facts into a single memory.
+"""
