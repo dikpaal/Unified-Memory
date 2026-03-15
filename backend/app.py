@@ -51,85 +51,61 @@ def sync():
 
 @app.route('/memories', methods=['GET'])
 def get_memories():
-    """Get all memories for current platform"""
+    """Get all memories across all platforms"""
+
     logger.info("Received memories request")
-    try:
-        if m is None:
-            return jsonify({'success': False, 'error': 'Backend not initialized'}), 500
 
-        platform = request.args.get('platform')
-        if not platform:
-            return jsonify({'success': False, 'error': 'Missing platform'}), 400
+    memories = []
+    store = kv_store.get_all_memories()
+    for _, mem_list in store.items():
+        memories.extend(mem_list)
+    
+    # Format for display
+    formatted_memories = [{
+        'text': memory_tuple[0].memory,
+        'created': memory_tuple[1]
+    } for memory_tuple in memories]
 
-        logger.info(f"Fetching memories for {USER_ID}")
-
-        # Get all memories for this user
-        results = m.get_all(user_id=USER_ID)
-        memory_list = results['results']
-
-        logger.info(f"Found {len(memory_list)} memories")
-
-        # Format for display
-        memories = [{
-            'text': mem.get('memory', ''),
-            'created': mem.get('created_at', '')[:16] if mem.get('created_at') else ''
-        } for mem in memory_list]
-
-        return jsonify({
-            'success': True,
-            'memories': memories
-        })
-    except Exception as e:
-        logger.error(f"Memories error: {e}")
-        return jsonify({'success': True, 'memories': []}), 200
+    return jsonify({
+        'success': True,
+        'memories': formatted_memories
+    })
 
 @app.route('/load', methods=['GET'])
 def load():
     logger.info("Received load request")
-    try:
-        if m is None:
-            logger.error("mem0 not initialized")
-            return jsonify({'success': False, 'error': 'Backend not initialized'}), 500
 
-        current_platform = request.args.get('platform')
-        # Get memories from other platforms
-        seven_days_ago = datetime.now(timezone.utc) - timedelta(days=7)
+    current_platform = request.args.get('platform')
 
-        platforms = {'chatgpt', 'claude'}
-        if current_platform in platforms:
-            platforms.remove(current_platform)
+    platforms = {'chatgpt', 'claude'}
+    if current_platform in platforms:
+        platforms.remove(current_platform)
 
-        all_memories = []
+    for platform in platforms:
+        
+        # Get memories from other platforms after timestamp_to_fetch_from
+        # timestamp_to_fetch_from is the latest timestamp from the current platform's memory sync
+        loaded_memories = []
+        
+        store = kv_store.get_all_memories()
+        memories_from_current_platform = store[current_platform]
+        if not memories_from_current_platform:
+            # we want all the memories so we set timestamp_to_fetch_from to the lowest possible value
+            timestamp_to_fetch_from = datetime.min
+        else:
+            store = kv_store.get_all_memories()
+            timestamp_to_fetch_from = store[current_platform][-1][1]
+        
+        memories = kv_store.get_memories(platform=platform, timestamp=timestamp_to_fetch_from)
+        loaded_memories.extend(memories)
 
-        for platform in platforms:
+    formatted = format_memories(loaded_memories)
+    print("LOADED MEMORIES: ", formatted)
 
-            results = m.get_all(user_id=USER_ID)
-            logger.info(f"Got memories for {platform}: {type(results)}, {results is not None}")
-            memory_list = results['results']
-            
-            for memory in memory_list:
-                # Parse timestamp
-                created_str = memory.get('created_at', '')
-                created = datetime.fromisoformat(created_str.replace('Z', '+00:00'))
-                if memory['metadata']['platform'] == platform and created > seven_days_ago:
-                    all_memories.append({
-                        'platform': platform,
-                        'memory': memory.get('memory', ''),
-                        'timestamp': created_str
-                    })
-                    
-        # Format memories
-        print("ALL MEMORIES: ", all_memories)
-        formatted = format_memories(all_memories)
-        logger.info(f"Load successful: {len(all_memories)} memories found")
-
-        return jsonify({
-            'formatted_text': formatted,
-            'memory_count': len(all_memories)
-        })
-    except Exception as e:
-        logger.error(f"Load error: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+    return jsonify({
+        'formatted_text': formatted,
+        'memory_count': len(loaded_memories)
+    })
 
 def format_memories(memories):
     if not memories:
@@ -137,26 +113,9 @@ def format_memories(memories):
 
     text = "Update your memory with these facts from other platforms:\n\n"
 
-    # Group by platform
-    by_platform = {}
-    for m in memories:
-        platform = m['platform'].title()
-        print("PLATFORM: ", platform)
-        if platform not in by_platform:
-            by_platform[platform] = []
-
-        by_platform[platform].append(m)
-
-    for platform, items in by_platform.items():
-        # Get latest timestamp
-        latest_time = items[0]['timestamp'][:16] if items[0]['timestamp'] else ''
-        text += f"From {platform} ({latest_time}):\n"
-        for item in items:
-            memory_text = item['memory'].strip()
-            if memory_text:
-                text += f"- {memory_text}\n"
-        text += "\n"
-
+    for memory_tuple in memories:
+        text += "- " + memory_tuple[0].memory + "\n"
+    
     return text.strip()
 
 @app.errorhandler(500)
