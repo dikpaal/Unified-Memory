@@ -33,7 +33,7 @@ class KVStore:
         if platform not in {'chatgpt', 'claude'}:
             raise ValueError("Invalid platform")
         
-        memories = self.kvstore[platform]
+        memories = self.kv_store[platform]
         
         l, r = 0, len(memories) - 1
         
@@ -48,3 +48,6 @@ class KVStore:
                 r = mid
                 
         return memories[l:]
+    
+    def get_all_memories(self):
+        return self.kv_store
