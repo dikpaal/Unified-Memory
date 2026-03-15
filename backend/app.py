@@ -1,11 +1,13 @@
+import os
+import logging
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from mem0 import Memory
 from datetime import datetime, timedelta, timezone
-import os
 from dotenv import load_dotenv
-import logging
-import traceback
+
+from backend.summarize_conversation import GeminiGenerator
+from models.models import Memory
+from backend.db.kv_store import KVStore
 
 load_dotenv()
 
@@ -16,70 +18,36 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 CORS(app)
 
-USER_ID = "dikpaal-test"
-
-# Initialize mem0
-logger.info("Initializing mem0...")
-config = {
-    "llm": {
-        "provider": "openai",
-        "config": {
-            "model": "gpt-4o-mini",
-            "api_key": os.getenv("OPENAI_API_KEY")
-        }
-    },
-    "embedder": {
-        "provider": "openai",
-        "config": {
-            "model": "text-embedding-3-small",
-            "api_key": os.getenv("OPENAI_API_KEY")
-        }
-    }
-}
-
-try:
-    m = Memory.from_config(config)
-    logger.info("mem0 initialized successfully")
-except Exception as e:
-    logger.error(f"Failed to initialize mem0: {e}")
-    m = None
-
-@app.route('/health', methods=['GET'])
-def health():
-    return jsonify({'status': 'ok', 'mem0_ready': m is not None})
+kv_store = KVStore()
+generator = GeminiGenerator()
 
 @app.route('/sync', methods=['POST'])
 def sync():
     logger.info("Received sync request")
-    try:
-        if m is None:
-            logger.error("mem0 not initialized")
-            return jsonify({'success': False, 'error': 'Backend not initialized'}), 500
 
-        data = request.json
-        messages = data.get('messages', [])
-        metadata = data.get('metadata', {})
+    data = request.json
+    messages = data.get('messages', [])
+    metadata = data.get('metadata', {})
 
-        logger.info(f"Sync data: {len(messages)} messages")
-
-        # mem0.add() takes a single string (user message), not a list
-        # Combine all user messages into one conversation context
-        combined_text = "\n".join([msg['content'] for msg in messages if 'content' in msg])
-
-        result = m.add(combined_text, user_id=USER_ID, metadata=metadata)
-        logger.info(f"Sync successful: {len(messages)} messages stored")
+    logger.info(f"Sync data: {len(messages)} messages")    
+    
+    memories = generator.generate_memory(messages)
+    
+    for memory_str in memories:        
+        kv_store.add_memory(platform=metadata['platform'], memory=Memory(
+            memory=memory_str,
+            metadata=None
+        ))
         
-        print("FROM SYNC: ", messages)
-
-        return jsonify({
-            'success': True,
-            'count': len(messages),
-            'memories_stored': len(result) if isinstance(result, list) else 1
-        })
-    except Exception as e:
-        logger.error(f"Sync error: {e}")
-        logger.error(f"Full traceback:\n{traceback.format_exc()}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+    print(kv_store.kv_store)
+        
+    logger.info(f"Sync successful: {len(memories)} memories stored")
+    
+    return jsonify({
+        'success': True,
+        'count': len(memories),
+        'memories_stored': len(memories) if isinstance(memories, list) else 1
+    })
 
 @app.route('/memories', methods=['GET'])
 def get_memories():
@@ -211,10 +179,6 @@ if __name__ == '__main__':
     logger.info("="*50)
     logger.info("Starting Unified Memory backend")
     logger.info(f"Backend URL: http://localhost:{PORT}")
-    logger.info(f"mem0 status: {'Ready' if m else 'Failed'}")
     logger.info("CORS: Enabled for all origins")
-    logger.info("="*50)
-    logger.info(f"Test with: curl http://localhost:{PORT}/health")
-    logger.info("="*50)
 
     app.run(host='localhost', port=PORT, debug=True)
