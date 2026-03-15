@@ -6,7 +6,7 @@ import json
 import os
 from uuid import UUID
 
-from models.models import Memory
+from backend.models.models import Memory
 
 class KVStore:
 

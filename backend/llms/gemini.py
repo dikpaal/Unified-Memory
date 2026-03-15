@@ -4,7 +4,7 @@ from google.genai import types
 from backend.prompts.prompts import SYSTEM_PROMPT_SUMMARIZE_CONVERSATION_GEMINI, SYSTEM_PROMPT_GENERATE_MEMORY_GEMINI
 from pydantic import BaseModel
 
-from models.models import Summary, Memories
+from backend.models.models import Summary, Memories
 
 class GeminiGenerator:
     """

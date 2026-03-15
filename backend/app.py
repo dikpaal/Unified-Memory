@@ -5,8 +5,8 @@ from flask_cors import CORS
 from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 
-from backend.summarize_conversation import GeminiGenerator
-from models.models import Memory
+from backend.llms.gemini import GeminiGenerator
+from backend.models.models import Memory
 from backend.db.kv_store import KVStore
 
 

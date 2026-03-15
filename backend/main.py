@@ -1,7 +1,7 @@
-from api.api_server import APIServer
+from backend.app import UnifiedMemoryService
 
 if __name__ == "__main__":
-    server = APIServer()
+    server = UnifiedMemoryService()
     
     server.app.run(
         host="localhost",
