@@ -1,14 +1,12 @@
 import json
 from google import genai
 from google.genai import types
-from prompts.prompts import SYSTEM_PROMPT_SUMMARIZE_CONVERSATION_GEMINI
+from backend.prompts.prompts import SYSTEM_PROMPT_SUMMARIZE_CONVERSATION_GEMINI, SYSTEM_PROMPT_GENERATE_MEMORY_GEMINI
 from pydantic import BaseModel
 
-class Summary(BaseModel):
-    summary: str
+from models.models import Summary, Memories
 
-
-class ConversationSummarizer:
+class GeminiGenerator:
     """
     Given messages from a conversation, generates a summary
     """
@@ -35,6 +33,27 @@ class ConversationSummarizer:
         cleaned_summary = json.loads(raw_summary)
 
         return cleaned_summary.get('summary', '')
+
+    def generate_memory(self, messages) -> str:
+        
+        formatted_messages = self._format_conversation(messages=messages)
+        
+        response = self.client.models.generate_content(
+            model="gemini-3-flash-preview", 
+            contents=formatted_messages,
+            config=types.GenerateContentConfig(
+                system_instruction=SYSTEM_PROMPT_GENERATE_MEMORY_GEMINI,
+                max_output_tokens=1024,
+                temperature=0.0,
+                response_mime_type='application/json',
+                response_schema=Memories,
+            ),
+        )
+        raw_memory = response.candidates[0].content.parts[0].text
+        cleaned_memory = json.loads(raw_memory)
+
+        return cleaned_memory.get('memories', '')
+        
     
     def _format_conversation(self, messages) -> str:
         
@@ -59,10 +78,12 @@ class ConversationSummarizer:
         
 
 # if __name__ == "__main__":
-#     summarizer = ConversationSummarizer()
+#     summarizer = GeminiGenerator()
 #     messages = [
 #         {"role": 'user', "content": 'my name is Dikpaal'},         
-#         {"role": 'assistant', "content": 'Nice to meet you, Dikpaal! 👋\nThat’s a strong name…pretty cool imagery.\nHow can I help you today? 🚀'}
+#         {"role": 'assistant', "content": 'Nice to meet you, Dikpaal! 👋\nThat’s a strong name…pretty cool imagery.\nHow can I help you today? 🚀'},
+#         {"role": 'user', "content": 'I love python'},         
+#         {"role": 'assistant', "content": '🚀'}
 #     ]
     
-#     print(summarizer.summarize(messages))
+#     print(type(summarizer.generate_memory(messages)))
