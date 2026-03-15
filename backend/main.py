@@ -1,4 +1,4 @@
-from app import UnifiedMemoryService
+from backend.app import UnifiedMemoryService
 
 if __name__ == '__main__':
     

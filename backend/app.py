@@ -129,7 +129,7 @@ class UnifiedMemoryService:
             'memory_count': len(loaded_memories)
         })
 
-    def _format_memories(memories):
+    def _format_memories(self, memories):
         if not memories:
             return "No new memories from other platforms."
 
