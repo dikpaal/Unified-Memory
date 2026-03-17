@@ -28,6 +28,7 @@ Only extract information that is stable and meaningful over time.
 Examples of good memories:
 - The user's preferences
 - The user's goals
+- The kind of person user is (including nature and character traits). Don't include them if they are negative.
 - The user's background (education, job, interests)
 - Important projects the user is working on
 - Personal traits or habits
@@ -43,7 +44,7 @@ Each memory should be:
 - Atomic (one fact per memory)
 - Written clearly in third person
 - Self-contained
-- Short (1 sentence)
+- Extremely concise and sacrifice grammar for the sake of concision.
 
 If no durable memories exist, return an empty list.
 

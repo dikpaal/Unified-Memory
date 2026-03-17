@@ -43,7 +43,7 @@ class GeminiGenerator:
             contents=formatted_messages,
             config=types.GenerateContentConfig(
                 system_instruction=SYSTEM_PROMPT_GENERATE_MEMORY_GEMINI,
-                max_output_tokens=1024,
+                max_output_tokens=2000,
                 temperature=0.0,
                 response_mime_type='application/json',
                 response_schema=Memories,
