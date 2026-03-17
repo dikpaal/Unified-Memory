@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 from backend.models.models import Summary, Memories
 
-class GeminiGenerator:
+class Gemini:
     """
     Uses Gemini to generate summary and memory
     """
@@ -35,11 +35,11 @@ class GeminiGenerator:
         return cleaned_summary.get('summary', '')
 
     def generate_memory(self, messages) -> str:
-        
+
         formatted_messages = self._format_conversation(messages=messages)
-        
+
         response = self.client.models.generate_content(
-            model="gemini-3-flash-preview", 
+            model="gemini-3-flash-preview",
             contents=formatted_messages,
             config=types.GenerateContentConfig(
                 system_instruction=SYSTEM_PROMPT_GENERATE_MEMORY_GEMINI,
@@ -53,6 +53,14 @@ class GeminiGenerator:
         cleaned_memory = json.loads(raw_memory)
 
         return cleaned_memory.get('memories', '')
+
+    def embed_text(self, text: str) -> list[float]:
+        """Generate embedding for text using Google's embedding model"""
+        response = self.client.models.embed_content(
+            model='text-embedding-004',
+            content=text
+        )
+        return response.embeddings[0].values
         
     
     def _format_conversation(self, messages) -> str:

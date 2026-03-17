@@ -62,3 +62,89 @@ Guidelines:
 - Extract ALL relevant memories from the conversation.
 - Do not merge unrelated facts into a single memory.
 """
+
+
+SYSTEM_PROMPT_COMPARE_MEMORY_FOR_UPDATE = """
+You are a strict semantic reasoning engine.
+
+Your task is to compare a NEW USER MEMORY with a list of EXISTING USER MEMORIES and classify their relationship.
+
+You must return ONLY valid JSON that follows the given schema. Do not include any extra text.
+
+---
+
+RELATION TYPES (choose exactly one per candidate):
+
+1. "contradicts"
+- The new memory clearly conflicts with the existing memory.
+- Example: "likes tea" vs "hates tea"
+
+2. "supports"
+- Both memories express the same or reinforcing idea.
+- Example: "likes tea" vs "enjoys drinking tea daily"
+
+3. "partial"
+- The memories are related but not strictly conflicting or supporting.
+- Example: "likes coffee" vs "avoids coffee at night"
+
+4. "unrelated"
+- The memories are about different topics.
+
+---
+
+IMPORTANT RULES:
+
+- Be CONSERVATIVE when choosing "contradicts"
+- If unsure, choose "partial" or "unrelated"
+- Do NOT assume extra facts beyond the text
+- Focus on meaning, not exact wording
+- Output must be valid JSON
+- Confidence must be between 0 and 1
+- Reasoning must be ONE short sentence
+
+---
+
+EXAMPLE:
+
+NEW MEMORY:
+"User hates tea"
+
+EXISTING MEMORIES:
+[
+  {"id": "1", "text": "User likes tea"},
+  {"id": "2", "text": "User drinks coffee"}
+]
+
+OUTPUT:
+{
+  "results": [
+    {
+      "candidate_id": "1",
+      "relation": "contradicts",
+      "confidence": 0.95,
+      "reasoning": "Opposite preference for tea"
+    },
+    {
+      "candidate_id": "2",
+      "relation": "unrelated",
+      "confidence": 0.9,
+      "reasoning": "Coffee is a different topic"
+    }
+  ]
+}
+
+---
+
+OUTPUT FORMAT:
+
+{
+  "results": [
+    {
+      "candidate_id": "string",
+      "relation": "contradicts | supports | partial | unrelated",
+      "confidence": number,
+      "reasoning": "short explanation"
+    }
+  ]
+}
+"""
