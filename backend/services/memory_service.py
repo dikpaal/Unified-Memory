@@ -8,16 +8,18 @@ class MemoryService:
 
     def __init__(self):
         self.kv_store = KVStore()
-        self.generator = GeminiGenerator()
+        self.generator = Gemini()
 
     def sync_memories(self, messages, metadata):
 
         memories = self.generator.generate_memory(messages)
 
         for memory_str in memories:
+            embedding = self.generator.embed_text(memory_str)
             self.kv_store.add_memory(
                 platform=metadata["platform"],
                 memory=Memory(memory=memory_str, metadata=None),
+                embedding=embedding
             )
 
         return memories

@@ -34,11 +34,18 @@ class KVStore:
                 platform TEXT NOT NULL CHECK(platform IN ('chatgpt', 'claude')),
                 memory TEXT NOT NULL,
                 metadata TEXT,
-                timestamp REAL NOT NULL
+                timestamp REAL NOT NULL,
+                embedding BLOB
             )
         """)
 
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_platform_timestamp ON memories(platform, timestamp)")
+
+        # Migration for existing DBs: add embedding column if missing
+        cursor.execute("PRAGMA table_info(memories)")
+        columns = [row[1] for row in cursor.fetchall()]
+        if 'embedding' not in columns:
+            cursor.execute("ALTER TABLE memories ADD COLUMN embedding BLOB")
 
         conn.commit()
         conn.close()
@@ -56,21 +63,22 @@ class KVStore:
 
         return deleted_count
         
-    def add_memory(self, platform: str, memory: Memory):
+    def add_memory(self, platform: str, memory: Memory, embedding: list[float]):
         """
-        Add memory for `platform` with current timestamp
+        Add memory for `platform` with current timestamp and embedding
         """
         if platform not in {'chatgpt', 'claude'}:
             raise ValueError("Invalid platform")
 
         timestamp = datetime.now(timezone.utc).timestamp()
         metadata_json = json.dumps(memory.metadata) if memory.metadata else None
+        embedding_blob = json.dumps(embedding)
 
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         cursor.execute(
-            "INSERT INTO memories (memory_id, platform, memory, metadata, timestamp) VALUES (?, ?, ?, ?, ?)",
-            (str(memory.memory_id), platform, memory.memory, metadata_json, timestamp)
+            "INSERT INTO memories (memory_id, platform, memory, metadata, timestamp, embedding) VALUES (?, ?, ?, ?, ?, ?)",
+            (str(memory.memory_id), platform, memory.memory, metadata_json, timestamp, embedding_blob)
         )
         conn.commit()
         conn.close()
