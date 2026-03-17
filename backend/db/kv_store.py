@@ -21,6 +21,7 @@ class KVStore:
 
         self.db_path = db_path
         self._init_db()
+        self.cleanup_old_memories()
 
     def _init_db(self):
         """Initialize SQLite database with schema"""
@@ -41,6 +42,19 @@ class KVStore:
 
         conn.commit()
         conn.close()
+
+    def cleanup_old_memories(self, hours: int = 24):
+        """Delete memories older than specified hours"""
+        cutoff_timestamp = datetime.now(timezone.utc).timestamp() - (hours * 3600)
+
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM memories WHERE timestamp < ?", (cutoff_timestamp,))
+        deleted_count = cursor.rowcount
+        conn.commit()
+        conn.close()
+
+        return deleted_count
         
     def add_memory(self, platform: str, memory: Memory):
         """
