@@ -16,10 +16,12 @@ class MemoryService:
 
         memories = self.generator.generate_memories(messages)
         updated_memories = self._update_memories_and_embeddings(memories=memories)
+        print("UPDATED MEMORIES: ", updated_memories)
         
         for index in range(len(updated_memories)):
             embedding = self.generator.embed_text(updated_memories[index])
             memory = updated_memories[index]
+            print(f'- {memory}: {embedding}\n')
             
             self.kv_store.add_memory(
                 platform=metadata["platform"],
@@ -27,6 +29,8 @@ class MemoryService:
                 embedding=embedding
             )
 
+        print(memories)
+        
         return memories
 
     def get_all_memories(self):
@@ -86,6 +90,9 @@ class MemoryService:
         
         # memory -> [similar memories from db based on similarity score]
         similar_memories = defaultdict(list)
+        
+        for memory in memories:
+            similar_memories[memory].append(memory)
         
         for index in range(len(memories)):
             memory = memories[index]

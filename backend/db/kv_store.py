@@ -68,6 +68,7 @@ class KVStore:
         """
         Add memory for `platform` with current timestamp and embedding
         """
+        print("START OF ADD MEMORY")
         if platform not in {'chatgpt', 'claude'}:
             raise ValueError("Invalid platform")
 
@@ -77,10 +78,12 @@ class KVStore:
 
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
+        print("JUST BEFORE INSERT INTO STATEMENT")
         cursor.execute(
             "INSERT INTO memories (memory_id, platform, memory, metadata, timestamp, embedding) VALUES (?, ?, ?, ?, ?, ?)",
             (str(memory.memory_id), platform, memory.memory, metadata_json, timestamp, embedding_blob)
         )
+        print("DONE!!!!!!")
         conn.commit()
         conn.close()
         
@@ -162,12 +165,14 @@ class KVStore:
             results.append(
                 (UUID(row[1]), row[2], score)
             )
-            
+        
+        print(results)
+        
         results.sort(key=lambda x: x[2], reverse=True)
         
         results = results[:top_k]
         return [r for r in results if r[2] >= threshold]
         
         
-    def _cosine_similarity(a, b):
+    def _cosine_similarity(self, a, b):
         return float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
