@@ -1,7 +1,9 @@
 from datetime import datetime
 from backend.db.kv_store import KVStore
-from backend.generators.gemini_generator import GeminiGenerator
+from backend.generators.gemini_generator import Gemini
 from backend.models.models import Memory
+
+from collections import defaultdict
 
 
 class MemoryService:
@@ -12,13 +14,21 @@ class MemoryService:
 
     def sync_memories(self, messages, metadata):
 
-        memories = self.generator.generate_memory(messages)
+        memories = self.generator.generate_memories(messages)
+        embeddings = [0] * len(memories)
 
-        for memory_str in memories:
-            embedding = self.generator.embed_text(memory_str)
+        for index in range(len(memories)):    
+            embeddings[index] = self.generator.embed_text(memories[index])
+        
+        updated_memories = self._update_memories_and_embeddings(memories=memories, embeddings=embeddings)
+        
+        for index in range(len(updated_memories)):
+            embedding = self.generator.embed_text(updated_memories[index])
+            memory = updated_memories[index]
+            
             self.kv_store.add_memory(
                 platform=metadata["platform"],
-                memory=Memory(memory=memory_str, metadata=None),
+                memory=Memory(memory=memory, metadata=None),
                 embedding=embedding
             )
 
@@ -60,9 +70,13 @@ class MemoryService:
             loaded_memories.extend(memories)
 
         return loaded_memories
+    
 
     def format_memories_for_load(self, memories):
-        """Format memories as text for AI to update its memory"""
+        """
+        Format memories as text for AI to update its memory
+        """
+        
         if not memories:
             return "No new memories from other platforms."
 
@@ -71,3 +85,26 @@ class MemoryService:
             text += f"- {memory.memory}\n"
 
         return text.strip()
+    
+    
+    def _update_memories_and_embeddings(self, memories, embeddings):
+        
+        # memory -> [similar memories from db based on vector search]
+        similar_memories = defaultdict(list)
+        
+        for index in range(len(memories)):
+            memory = memories[index]
+            embedding = embeddings[index]    
+            retrieved_memories = self.kv_store.perform_vector_search(embedding=embedding)
+            similar_memories[memory].extend(retrieved_memories)
+            
+        updated_memories = []
+        
+        for memory in similar_memories:
+            if not similar_memories[memory]:
+                continue
+            
+            updated_mems = self.generator.update_memories(new_memory=memory, memories=similar_memories[memory])
+            updated_memories.extend(updated_mems)
+            
+        return updated_memories
