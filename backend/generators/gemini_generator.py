@@ -6,6 +6,7 @@ from backend.prompts.prompts import SYSTEM_PROMPT_SUMMARIZE_CONVERSATION_GEMINI,
 from pydantic import BaseModel
 
 from backend.models.models import Summary, Memory, Memories
+from backend.db.kv_store import KVStore
 
 class Gemini:
     """
@@ -66,6 +67,26 @@ class Gemini:
         )
 
         return response.embeddings[0].values
+    
+    def remove_memories_already_present_in_database(self, kv_store: KVStore, memories: List[str]) -> List[str]:
+        """
+        Remove memories from `memories` that are already present in database
+        """
+        
+        updated_memories = []
+        
+        for memory in memories:
+            embedding = self.embed_text(memory)
+            
+            # don't add if similar memory exists
+            retrieved_memory = kv_store.perform_vector_search(embedding=embedding, top_k=1, threshold=0.9)
+            
+            if retrieved_memory:
+                continue
+            
+            updated_memories.append(memory)
+        
+        return updated_memories    
     
     def update_memories(self, new_memories: List[str], memories: List[str]) -> List[str]:
         """

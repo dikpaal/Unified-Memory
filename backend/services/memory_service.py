@@ -15,6 +15,7 @@ class MemoryService:
     def sync_memories(self, messages, metadata):
 
         memories = self.generator.generate_memories(messages)
+        memories = self.generator.remove_memories_already_present_in_database(kv_store=self.kv_store, memories=memories)
         updated_memories = self._update_memories_and_embeddings(memories=memories)
         print("UPDATED MEMORIES: ", updated_memories)
         
