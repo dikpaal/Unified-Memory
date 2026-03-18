@@ -15,12 +15,7 @@ class MemoryService:
     def sync_memories(self, messages, metadata):
 
         memories = self.generator.generate_memories(messages)
-        embeddings = [0] * len(memories)
-
-        for index in range(len(memories)):    
-            embeddings[index] = self.generator.embed_text(memories[index])
-        
-        updated_memories = self._update_memories_and_embeddings(memories=memories, embeddings=embeddings)
+        updated_memories = self._update_memories_and_embeddings(memories=memories)
         
         for index in range(len(updated_memories)):
             embedding = self.generator.embed_text(updated_memories[index])
@@ -87,14 +82,14 @@ class MemoryService:
         return text.strip()
     
     
-    def _update_memories_and_embeddings(self, memories, embeddings):
+    def _update_memories_and_embeddings(self, memories):
         
-        # memory -> [similar memories from db based on vector search]
+        # memory -> [similar memories from db based on similarity score]
         similar_memories = defaultdict(list)
         
         for index in range(len(memories)):
             memory = memories[index]
-            embedding = embeddings[index]    
+            embedding = self.generator.embed_text(memory) 
             retrieved_memories = self.kv_store.perform_vector_search(embedding=embedding)
             similar_memories[memory].extend(retrieved_memories)
             
