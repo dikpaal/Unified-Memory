@@ -1,10 +1,11 @@
 from datetime import datetime, timezone
 from typing import List
 from collections import defaultdict
+from uuid import UUID
+import numpy as np
 import sqlite3
 import json
 import os
-from uuid import UUID
 
 from backend.models.models import Memory
 
@@ -139,3 +140,34 @@ class KVStore:
             result[platform].append((memory, dt))
 
         return result
+    
+    def perform_vector_search(self, embedding: List[float], top_k: int = 2, threshold: float = 0.87) -> List[tuple[str, str, float]]:
+        """
+        Returns list of memories based on the filers set
+        """
+        
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT platform, memory_id, memory, metadata, embedding, timestamp FROM memories ORDER BY platform, timestamp ASC"
+        )
+        rows = cursor.fetchall()
+        conn.close()
+        
+        results = []
+        
+        for row in rows:
+            row_embedding = np.array(json.loads(row[4]))
+            score = self._cosine_similarity(embedding, row_embedding)
+            results.append(
+                (UUID(row[1]), row[2], score)
+            )
+            
+        results.sort(key=lambda x: x[2], reverse=True)
+        
+        results = results[:top_k]
+        return [r for r in results if r[2] >= threshold]
+        
+        
+    def _cosine_similarity(a, b):
+        return float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
