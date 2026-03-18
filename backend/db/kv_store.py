@@ -144,7 +144,7 @@ class KVStore:
 
         return result
     
-    def perform_vector_search(self, embedding: List[float], top_k: int = 2, threshold: float = 0.87) -> List[tuple[str, str, float]]:
+    def perform_vector_search(self, embedding: List[float], top_k: int = 2, threshold: float = 0.82) -> List[tuple[str, str, float]]:
         """
         Returns list of memories based on the filers set
         """
@@ -174,5 +174,15 @@ class KVStore:
         return [r for r in results if r[2] >= threshold]
         
         
+    def delete_memory(self, memory_id: UUID):
+        """
+        Delete memory by UUID
+        """
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM memories WHERE memory_id = ?", (str(memory_id),))
+        conn.commit()
+        conn.close()
+
     def _cosine_similarity(self, a, b):
         return float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))

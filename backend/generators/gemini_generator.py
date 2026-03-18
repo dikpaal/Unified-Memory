@@ -67,12 +67,12 @@ class Gemini:
 
         return response.embeddings[0].values
     
-    def update_memories(self, new_memory: str, memories: List[str]) -> List[str]:
+    def update_memories(self, new_memories: List[str], memories: List[str]) -> List[str]:
         """
-        Compares `new_memory` with `memories` and outputs updated memories
+        Compares `new_memories` with `memories` and outputs updated memories
         """
-        
-        formatted_memories = self._format_memories(new_memory=new_memory, memories=memories)
+
+        formatted_memories = self._format_memories(new_memories=new_memories, memories=memories)
         response = self.client.models.generate_content(
             model="gemini-3-flash-preview",
             contents=formatted_memories,
@@ -89,18 +89,21 @@ class Gemini:
         cleaned_memory = json.loads(raw_memory)
 
         return cleaned_memory.get('memories', '')
-    
-    def _format_memories(self, new_memory, memories) -> str:
-        
+
+    def _format_memories(self, new_memories, memories) -> str:
+
         """
         Formats the memories in a single string
         """
-        
-        final_memories = f'NEW MEMORY:\n{new_memory}\n\n PRESENT MEMORIES:'
-        
+
+        final_memories = 'NEW MEMORIES:'
+        for new_mem in new_memories:
+            final_memories += f'\n- {new_mem}'
+
+        final_memories += '\n\nEXISTING MEMORIES:'
         for memory in memories:
-            final_memories += f'\n- "{memory}"'
-        
+            final_memories += f'\n- {memory}'
+
         return final_memories
         
     
@@ -126,8 +129,8 @@ class Gemini:
         self.client.close()
         
 
-# if __name__ == "__main__":
-#     summarizer = Gemini()
+if __name__ == "__main__":
+    summarizer = Gemini()
     # messages = [
     #     {"role": 'user', "content": 'my name is Dikpaal'},         
     #     {"role": 'assistant', "content": 'Nice to meet you, Dikpaal! 👋\nThat’s a strong name…pretty cool imagery.\nHow can I help you today? 🚀'},
@@ -137,13 +140,13 @@ class Gemini:
     
     # print(type(summarizer.generate_memories(messages)[0]))
     
-    # import numpy as np
+    import numpy as np
     
-    # embedding_1 = summarizer.embed_text("User is straight")
-    # embedding_2 = summarizer.embed_text("User is introverted")
-    # embedding_3 = summarizer.embed_text("User is insightful")
-    # embedding_4 = summarizer.embed_text("User is deep")
+    embedding_1 = summarizer.embed_text("User is straight")
+    embedding_2 = summarizer.embed_text("User likes cats")
+    embedding_3 = summarizer.embed_text("User is insightful")
+    embedding_4 = summarizer.embed_text("User is deep")
     
-    # new_embedding = summarizer.embed_text("User is extroverted")
+    new_embedding = summarizer.embed_text("User dislikes cats")
     
-    # print(np.dot(new_embedding, embedding_2) / (np.linalg.norm(new_embedding) * np.linalg.norm(embedding_2)))
+    print(np.dot(new_embedding, embedding_2) / (np.linalg.norm(new_embedding) * np.linalg.norm(embedding_2)))
