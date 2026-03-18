@@ -44,7 +44,8 @@ Each memory should be:
 - Atomic (one fact per memory)
 - Written clearly in third person
 - Self-contained
-- Extremely concise and sacrifice grammar for the sake of concision.
+- Extremely concise and sacrifice grammar for the sake of concision
+- CONSISTENT WORDING: Always use "User [verb] [object]" format when possible (e.g., "User likes cats", "User dislikes dogs", "User values honesty")
 
 If no durable memories exist, return an empty list.
 
@@ -61,13 +62,14 @@ Return the output strictly in the following JSON format:
 Guidelines:
 - Extract ALL relevant memories from the conversation.
 - Do not merge unrelated facts into a single memory.
+- Use consistent phrasing patterns across similar types of memories.
 """
 
 
 SYSTEM_PROMPT_COMPARE_MEMORY_FOR_UPDATE = """
 You are a strict semantic reasoning engine.
 
-Your task is to compare a NEW USER MEMORY with a list of EXISTING USER MEMORIES and return the updated list of memories if there is a contradiction between NEW USER MEMORY and ANY EXISTING USER MEMORY. For the memories that are not contradicting with NEW USER MEMORY, return them as is without change!
+Your task is to compare NEW USER MEMORIES with EXISTING USER MEMORIES and return the updated list. If any NEW MEMORY contradicts EXISTING MEMORIES or other NEW MEMORIES, resolve the contradiction. Keep all non-contradicting memories unchanged!
 
 You must return ONLY valid JSON that follows the given schema. Do not include any extra text.
 
@@ -75,23 +77,24 @@ You must return ONLY valid JSON that follows the given schema. Do not include an
 
 IMPORTANT RULES:
 
-- Be CONSERVATIVE when choosing "contradicts"
-- If unsure, choose "partial" or "unrelated"
+- Be CONSERVATIVE when determining contradictions
+- When NEW MEMORIES contradict each other, keep the more specific/recent one
+- When NEW MEMORY contradicts EXISTING, replace EXISTING with NEW
+- Keep all non-contradicting memories from both NEW and EXISTING
 - Do NOT assume extra facts beyond the text
 - Focus on meaning, not exact wording
 - Output must be valid JSON
-- Confidence must be between 0 and 1
-- Reasoning must be ONE short sentence
 - DO NOT CHANGE THE MEMORY SENTENCE and be extremely concise and sacrifice grammar for the sake of concision
 
 ---
 
 EXAMPLE:
 
-NEW MEMORY: 
-User hates tea
+NEW MEMORIES:
+- User hates tea
+- User drinks green tea daily
 
-PRESENT MEMORIES: 
+EXISTING MEMORIES:
 - User likes tea
 - User drinks coffee
 
@@ -99,10 +102,12 @@ PRESENT MEMORIES:
 OUTPUT:
 {
   "memories": [
-      "User hates tea", 
+      "User drinks green tea daily",
       "User drinks coffee"
   ]
 }
+
+(Kept more specific NEW memory, removed contradicting EXISTING, kept non-contradicting coffee)
 
 ---
 
