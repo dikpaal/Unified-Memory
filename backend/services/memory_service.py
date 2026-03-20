@@ -17,7 +17,7 @@ class MemoryService:
         memories = self.generator.generate_memories(messages)
         memories = self.generator.remove_memories_already_present_in_database(kv_store=self.kv_store, memories=memories)
         updated_memories = self._update_memories_and_embeddings(memories=memories)
-        print("UPDATED MEMORIES: ", updated_memories)
+        # print("UPDATED MEMORIES: ", updated_memories)
         
         for index in range(len(updated_memories)):
             embedding = self.generator.embed_text(updated_memories[index])
@@ -30,9 +30,11 @@ class MemoryService:
                 embedding=embedding
             )
 
-        print(memories)
-        
+        # print(memories)
         return memories
+    
+    def summarize_chat(self, messages, metadata) -> str:
+        return self.generator.summarize(messages)
 
     def get_all_memories(self):
 

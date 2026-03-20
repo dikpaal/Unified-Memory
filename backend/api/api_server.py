@@ -21,6 +21,12 @@ class APIServer:
             view_func=self.sync,
             methods=["POST"]
         )
+        
+        self.app.add_url_rule(
+            "/summarize_chat",
+            view_func=self.summarize_chat,
+            methods=["POST"]
+        )
 
         self.app.add_url_rule(
             "/memories",
@@ -48,6 +54,22 @@ class APIServer:
         return jsonify({
             "success": True,
             "count": len(memories)
+        })
+        
+    def summarize_chat(self):
+        
+        data = request.json
+        messages = data.get("messages", [])
+        metadata = data.get("metadata", {})
+        
+        summary = self.memory_service.summarize_chat(
+            messages,
+            metadata
+        )
+        
+        return jsonify({
+            "success": True,
+            "summary": summary 
         })
 
     def get_memories(self):
