@@ -62,6 +62,8 @@ class APIServer:
         messages = data.get("messages", [])
         metadata = data.get("metadata", {})
         
+        print("REQUEST RECEIEVED!")
+        
         summary = self.memory_service.summarize_chat(
             messages,
             metadata

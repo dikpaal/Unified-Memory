@@ -190,12 +190,14 @@ summarizeBtn.addEventListener('click', async () => {
 
     // Extract messages from content script
     const extractResponse = await chrome.tabs.sendMessage(tab.id, { action: 'extractMessages' });
+    console.log('Extract response:', extractResponse);
 
     if (!extractResponse || !extractResponse.messages || extractResponse.messages.length === 0) {
       setStatus('No messages found', 'error');
       return;
     }
 
+    console.log('Messages extracted:', extractResponse.messages.length);
     setStatus('Generating summary...', 'loading');
 
     // Request summary from background worker
@@ -205,10 +207,13 @@ summarizeBtn.addEventListener('click', async () => {
       platform
     });
 
+    console.log('Summarize response:', response);
+
     if (response && response.success) {
       await navigator.clipboard.writeText(response.summary);
       setStatus('Summary copied to clipboard', 'success');
     } else {
+      console.error('Summarize failed:', response);
       setStatus(response?.error || 'Summarization failed', 'error');
     }
   } catch (error) {

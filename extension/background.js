@@ -124,26 +124,39 @@ async function handleGetMemories(platform, sendResponse) {
 
 // Handle summarize chat request
 async function handleSummarizeChat(request, sendResponse) {
+  console.log('handleSummarizeChat called with:', request);
+  console.log('Messages count:', request.messages?.length);
+
   try {
+    const requestBody = {
+      messages: request.messages,
+      metadata: {
+        platform: request.platform,
+        timestamp: new Date().toISOString()
+      }
+    };
+
+    console.log('Sending to backend:', BACKEND_URL + '/summarize_chat');
+    console.log('Request body:', JSON.stringify(requestBody).substring(0, 500));
+
     const response = await fetch(`${BACKEND_URL}/summarize_chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        messages: request.messages,
-        metadata: {
-          platform: request.platform,
-          timestamp: new Date().toISOString()
-        }
-      })
+      body: JSON.stringify(requestBody)
     });
 
+    console.log('Backend response status:', response.status);
+
     if (!response.ok) {
-      throw new Error(`Backend returned ${response.status}`);
+      const errorText = await response.text();
+      console.error('Backend error response:', errorText);
+      throw new Error(`Backend returned ${response.status}: ${errorText}`);
     }
 
     const result = await response.json();
+    console.log('Backend result:', result);
 
     sendResponse({
       success: true,
