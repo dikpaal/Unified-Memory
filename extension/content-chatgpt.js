@@ -6,6 +6,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     scrapeAndSync(sendResponse);
     return true;
   }
+
+  if (request.action === 'extractMessages') {
+    const messages = scrapeFullConversation();
+    sendResponse({ messages });
+    return true;
+  }
 });
 
 // Scrape full conversation from ChatGPT interface

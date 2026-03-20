@@ -18,6 +18,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     handleGetMemories(request.platform, sendResponse);
     return true; // Keep channel open for async response
   }
+
+  if (request.action === 'summarizeChat') {
+    handleSummarizeChat(request, sendResponse);
+    return true; // Keep channel open for async response
+  }
 });
 
 // Handle sync request - send scraped messages to backend
@@ -110,6 +115,42 @@ async function handleGetMemories(platform, sendResponse) {
     });
   } catch (error) {
     console.error('Get memories error:', error);
+    sendResponse({
+      success: false,
+      error: `Backend error: ${error.message}`
+    });
+  }
+}
+
+// Handle summarize chat request
+async function handleSummarizeChat(request, sendResponse) {
+  try {
+    const response = await fetch(`${BACKEND_URL}/summarize_chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        messages: request.messages,
+        metadata: {
+          platform: request.platform,
+          timestamp: new Date().toISOString()
+        }
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Backend returned ${response.status}`);
+    }
+
+    const result = await response.json();
+
+    sendResponse({
+      success: true,
+      summary: result.summary
+    });
+  } catch (error) {
+    console.error('Summarize error:', error);
     sendResponse({
       success: false,
       error: `Backend error: ${error.message}`

@@ -2,6 +2,7 @@
 const syncBtn = document.getElementById('sync-btn');
 const loadBtn = document.getElementById('load-btn');
 const viewBtn = document.getElementById('view-btn');
+const summarizeBtn = document.getElementById('summarize-btn');
 const statusEl = document.getElementById('status');
 const statusText = document.getElementById('status-text');
 const platformEl = document.getElementById('platform');
@@ -38,6 +39,7 @@ async function init() {
     platformEl.textContent = 'Unknown';
     syncBtn.disabled = true;
     loadBtn.disabled = true;
+    summarizeBtn.disabled = true;
     setStatus('Navigate to Claude or ChatGPT', 'error');
     return;
   }
@@ -171,6 +173,51 @@ viewBtn.addEventListener('click', async () => {
     console.error('View memories error:', error);
     memoriesList.innerHTML = '<div class="empty-state">Error loading memories</div>';
     memoriesPanel.classList.remove('hidden');
+  }
+});
+
+// Summarize chat handler
+summarizeBtn.addEventListener('click', async () => {
+  syncBtn.disabled = true;
+  loadBtn.disabled = true;
+  summarizeBtn.disabled = true;
+  viewBtn.disabled = true;
+  setStatus('Extracting messages...', 'loading');
+
+  try {
+    const platform = platformEl.dataset.platform;
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+    // Extract messages from content script
+    const extractResponse = await chrome.tabs.sendMessage(tab.id, { action: 'extractMessages' });
+
+    if (!extractResponse || !extractResponse.messages || extractResponse.messages.length === 0) {
+      setStatus('No messages found', 'error');
+      return;
+    }
+
+    setStatus('Generating summary...', 'loading');
+
+    // Request summary from background worker
+    const response = await chrome.runtime.sendMessage({
+      action: 'summarizeChat',
+      messages: extractResponse.messages,
+      platform
+    });
+
+    if (response && response.success) {
+      await navigator.clipboard.writeText(response.summary);
+      setStatus('Summary copied to clipboard', 'success');
+    } else {
+      setStatus(response?.error || 'Summarization failed', 'error');
+    }
+  } catch (error) {
+    setStatus(`Error: ${error.message}`, 'error');
+  } finally {
+    syncBtn.disabled = false;
+    loadBtn.disabled = false;
+    summarizeBtn.disabled = false;
+    viewBtn.disabled = false;
   }
 });
 

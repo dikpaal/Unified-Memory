@@ -6,6 +6,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     scrapeAndSync(sendResponse);
     return true; // Keep channel open for async response
   }
+
+  if (request.action === 'extractMessages') {
+    const messages = scrapeFullConversation();
+    sendResponse({ messages });
+    return true;
+  }
 });
 
 // Scrape full conversation from Claude interface
